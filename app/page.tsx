@@ -22,6 +22,8 @@ export type StageKey =
 
 export type PackageId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "I2" | "PMEC";
 
+export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD";
+
 interface Reviewer {
   role: string;
   name: string;
@@ -56,6 +58,10 @@ export interface ChangeRecord {
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
+
+  // New fields
+  prcTarget?: PcrTarget; // For PCRs: intended path (EI or CO)
+  sponsor?: string; // Change sponsor for that PCR / CO
 }
 
 // ==========================================
@@ -217,19 +223,21 @@ function stageTextClass(color: string) {
 }
 
 // ==========================================
-// Demo data
+// Demo data (with PRC target + sponsor)
 // ==========================================
 const DEMO: ChangeRecord[] = [
   {
-    id: "CO-A-013",
-    type: "CO",
+    id: "PCR-A-013",
+    type: "PRC",
     package: "A",
-    title: "Relocation of Fire Hydrant",
+    title: "Relocation of Fire Hydrant (PCR)",
     estimated: 350000,
     stageKey: "PRC",
     subStatus: "Under Review",
     stageStartDate: "2026-01-05",
     overallStartDate: "2026-01-05",
+    prcTarget: "EI", // PCR intended to lead to EI
+    sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
     reviewList: [
       {
         role: "PMEC (Engineer)",
@@ -240,8 +248,8 @@ const DEMO: ChangeRecord[] = [
     ],
     links: [
       {
-        label: "PRC Form (PDF)",
-        href: "https://example.com/pcr/CO-A-013.pdf",
+        label: "PCR Form (PDF)",
+        href: "https://example.com/pcr/PCR-A-013.pdf",
       },
       {
         label: "Sketch – Hydrant Relocation",
@@ -249,7 +257,26 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
-
+  {
+    id: "PCR-A-018",
+    type: "PRC",
+    package: "A",
+    title: "Handrail Height Adjustment (PCR)",
+    estimated: 650000,
+    stageKey: "PRC",
+    subStatus: "In Preparation",
+    stageStartDate: "2026-01-10",
+    overallStartDate: "2026-01-09",
+    prcTarget: "CO", // PCR intended to lead to CO
+    sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
+    reviewList: [
+      {
+        role: "Contracts Engineer",
+        name: "John Mathew",
+        decision: "Aligning scope with HSSE",
+      },
+    ],
+  },
   {
     id: "CO-B-014",
     type: "CO",
@@ -260,6 +287,7 @@ const DEMO: ChangeRecord[] = [
     subStatus: "Approved with Conditions",
     stageStartDate: "2026-01-09",
     overallStartDate: "2026-01-07",
+    sponsor: "Rail Systems Director",
     reviewList: [
       {
         role: "PMEC",
@@ -275,7 +303,6 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
-
   {
     id: "CO-A-019",
     type: "CO",
@@ -286,6 +313,7 @@ const DEMO: ChangeRecord[] = [
     subStatus: "In Approval",
     stageStartDate: "2026-01-13",
     overallStartDate: "2026-01-08",
+    sponsor: "Operations Director",
     reviewList: [
       {
         role: "PM (Pkg Owner)",
@@ -322,7 +350,6 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
-
   {
     id: "EI-A-004",
     type: "EI",
@@ -333,6 +360,7 @@ const DEMO: ChangeRecord[] = [
     subStatus: "In Preparation",
     stageStartDate: "2026-01-14",
     overallStartDate: "2026-01-14",
+    sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
     reviewList: [
       {
         role: "PMEC",
@@ -346,39 +374,6 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
-
-  {
-    id: "CO-A-018",
-    type: "CO",
-    package: "A",
-    title: "Handrail Height Adjustment",
-    estimated: 650000,
-    stageKey: "CO_V_VOS",
-    subStatus: "NA",
-    stageStartDate: "2026-01-15",
-    overallStartDate: "2026-01-12",
-    reviewList: [
-      {
-        role: "Contracts Engineer",
-        name: "John Mathew",
-        decision: "Draft prepared",
-      },
-      {
-        role: "Finance",
-        name: "Ahmed Al-Lawati",
-        decision: "Budget confirmed",
-      },
-    ],
-    signatureList: [
-      {
-        role: "Employer (Hafeet)",
-        name: "CEO Ahmed Al-Habsi",
-        signed: false,
-      },
-      { role: "Contractor", name: "Patrick Gomez", signed: false },
-    ],
-  },
-
   {
     id: "CO-G-032",
     type: "CO",
@@ -391,6 +386,7 @@ const DEMO: ChangeRecord[] = [
     subStatus: "Done",
     stageStartDate: "2025-07-22",
     overallStartDate: "2025-07-01",
+    sponsor: "Track Engineering Manager",
     reviewList: [
       {
         role: "PMEC",
@@ -436,6 +432,8 @@ function buildCSV(rows: ChangeRecord[]): string {
     "Variance",
     "Stage",
     "SubStatus",
+    "PRCTarget",
+    "Sponsor",
     "DaysInStage",
     "OverallDays",
   ];
@@ -455,6 +453,8 @@ function buildCSV(rows: ChangeRecord[]): string {
       vr ?? "",
       st.name,
       r.subStatus ?? "",
+      r.prcTarget ?? "",
+      r.sponsor ?? "",
       daysBetween(r.stageStartDate),
       daysBetween(r.overallStartDate),
     ].join(",");
@@ -509,12 +509,12 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardContent className="p-4">
-        <div className="text-sm text-muted-foreground">Change Orders (COs)</div>
+        <div className="text-sm text-muted-foreground">Change Items</div>
         <div className="text-4xl font-semibold mt-1">
           {fmtShort.format(s.total)}
         </div>
         <div className="mt-3 space-y-1 text-sm">
-          <div className="flex justifyetween">
+          <div className="flex justify-between">
             <span>Approved</span>
             <span>{s.approved}</span>
           </div>
@@ -523,7 +523,7 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
             <span>{s.inReview}</span>
           </div>
           <div className="flex justify-between">
-            <span>Proposed</span>
+            <span>Proposed (PRC)</span>
             <span>{s.proposed}</span>
           </div>
           <div className="flex justify-between">
@@ -540,8 +540,7 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
 // Project KPIs row
 // ==========================================
 function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
-  // TODO: connect this to real estimate later
-  const TOTAL_PROJECT_VALUE = 500_000_000; // AED 500M
+  const TOTAL_PROJECT_VALUE = 500_000_000; // demo: AED 500M
 
   const k = useMemo(() => {
     const totalCOValue = rows.reduce(
@@ -745,7 +744,7 @@ function Filters({
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search ID / title"
+            placeholder="Search ID / title / sponsor"
             className="pl-8 rounded-2xl min-w-[220px]"
           />
         </div>
@@ -762,6 +761,15 @@ function Filters({
 // ==========================================
 // Row + details
 // ==========================================
+function formatPcrTargetLabel(t?: PcrTarget) {
+  if (!t) return "";
+  if (t === "EI") return "PCR → EI";
+  if (t === "CO") return "PCR → CO";
+  if (t === "EI+CO") return "PCR → EI + CO";
+  if (t === "TBD") return "PCR Target TBD";
+  return t;
+}
+
 function Row({ r }: { r: ChangeRecord }) {
   const s = stageInfo(r.stageKey);
   const vr = variance(r.estimated, r.actual);
@@ -773,11 +781,29 @@ function Row({ r }: { r: ChangeRecord }) {
   const showSignatures = !!(r.signatureList && r.signatureList.length);
   const showClosedSummary = r.stageKey === FINAL_KEY;
 
+  const prcLabel = formatPcrTargetLabel(r.prcTarget);
+
   return (
     <div className="border-b last:border-b-0">
       <div className="grid grid-cols-12 items-center px-3 py-3 hover:bg-muted/40">
+        {/* ID + PRC target + sponsor */}
         <div className="col-span-2">
           <div className="font-medium">{r.id}</div>
+
+          {prcLabel && (
+            <div className="mt-1">
+              <Badge className="rounded-2xl bg-amber-100 text-amber-900 border border-amber-200">
+                {prcLabel}
+              </Badge>
+            </div>
+          )}
+
+          {r.sponsor && (
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Sponsor: {r.sponsor}
+            </div>
+          )}
+
           {r.links?.length ? (
             <div className="mt-1 flex flex-wrap gap-1">
               {r.links.map((lnk, i) => (
@@ -1044,7 +1070,7 @@ function Row({ r }: { r: ChangeRecord }) {
               </Card>
             )}
 
-            {/* 5) Document List */}
+            {/* 5) Documents */}
             {(r.links?.length ?? 0) > 0 && (
               <Card className="rounded-2xl md:order-5 md:col-span-3">
                 <CardContent className="p-4">
@@ -1097,7 +1123,9 @@ export default function ChangeOrdersDashboard({
         .filter((r) => (pkg === "All" ? true : r.package === pkg))
         .filter((r) =>
           q
-            ? `${r.id} ${r.title}`.toLowerCase().includes(q.toLowerCase())
+            ? `${r.id} ${r.title} ${r.sponsor ?? ""}`
+                .toLowerCase()
+                .includes(q.toLowerCase())
             : true,
         ),
     [rows, stage, pkg, q],
@@ -1122,7 +1150,7 @@ export default function ChangeOrdersDashboard({
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           <div className="grid grid-cols-12 px-3 py-3 text-xs uppercase tracking-wide text-muted-foreground border-b bg-muted/40">
-            <div className="col-span-2">Ref ID</div>
+            <div className="col-span-2">Ref ID / PCR Target / Sponsor</div>
             <div className="col-span-1">Package</div>
             <div className="col-span-3">Title</div>
             <div className="col-span-3">Stage</div>
@@ -1146,8 +1174,9 @@ export default function ChangeOrdersDashboard({
 
       <div className="text-xs text-muted-foreground">
         Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI → CO/V/VOS
-        → AA/SA. SLA &amp; progress are derived directly from the stage selection
-        and dates.
+        → AA/SA. SLA &amp; progress are derived directly from the stage and dates.
+        PCRs that are intended to lead to EI or CO are tagged, and sponsors are
+        visible under each reference.
       </div>
     </div>
   );
