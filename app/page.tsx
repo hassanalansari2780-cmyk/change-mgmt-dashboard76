@@ -1,0 +1,1 @@
+export default function Page(){return <div>Paste your dashboard page.tsx here</div>}
