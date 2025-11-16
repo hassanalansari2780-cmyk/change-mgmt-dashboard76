@@ -18,6 +18,8 @@
     "clsx": "2.1.0"
   },
   "devDependencies": {
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "@types/react": "^18.3.0",
+    "@types/node": "^20.0.0"
   }
 }
