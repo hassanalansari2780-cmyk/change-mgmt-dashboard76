@@ -440,7 +440,12 @@ function computeSummary(rows: ChangeRecord[]) {
   const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
   const pcrToCO = pcrs.filter((r) => r.target === "CO").length;
 
-  const completed = rows.filter((r) => r.stageKey === FINAL_KEY).length;
+  // Completed = CO/V/VOS (Done) OR AA/SA (Done)
+  const completed = rows.filter(
+    (r) =>
+      (r.stageKey === "CO_V_VOS" && r.subStatus === "Done") ||
+      (r.stageKey === "AA_SA" && r.subStatus === "Done"),
+  ).length;
 
   return { total, pcrToEI, pcrToCO, completed };
 }
@@ -465,7 +470,7 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
             <span>{s.pcrToCO}</span>
           </div>
           <div className="flex justify-between">
-            <span>Completed</span>
+            <span>Completed (CO/V/VOS or AA/SA)</span>
             <span>{s.completed}</span>
           </div>
         </div>
@@ -534,7 +539,8 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
 }
 
 // ==========================================
-// Stage timeline filter (top of page)
+// Stage timeline filter component (now unused UI-wise,
+// but kept in case you want to reuse it later)
 // ==========================================
 function StageTimeline({
   active,
@@ -772,8 +778,10 @@ function Row({ r }: { r: ChangeRecord }) {
 
   const showReview = !!(r.reviewList && r.reviewList.length);
   const showSignatures = !!(r.signatureList && r.signatureList.length);
-  const showClosedSummary = r.stageKey === FINAL_KEY;
-  const isClosed = r.stageKey === FINAL_KEY;
+  const showClosedSummary =
+    (r.stageKey === "AA_SA" || r.stageKey === "CO_V_VOS") &&
+    r.subStatus === "Done";
+  const isClosed = showClosedSummary;
 
   return (
     <div className="border-b last:border-b-0 bg-white">
@@ -1108,7 +1116,7 @@ export default function ChangeOrdersDashboard({
 }: {
   initial?: ChangeRecord[];
 }) {
-  const [stage, setStage] = useState<StageKey | "All">("All");
+  const [stage] = useState<StageKey | "All">("All"); // stage filter kept but not exposed in UI
   const [pkg, setPkg] = useState<PackageId | "All">("All");
   const [q, setQ] = useState("");
   const [rows] = useState<ChangeRecord[]>(initial ?? DEMO);
@@ -1142,6 +1150,17 @@ export default function ChangeOrdersDashboard({
     [pcrRows],
   );
 
+  // Completed items (CO/V/VOS or AA/SA issued)
+  const completedRows = useMemo(
+    () =>
+      view.filter(
+        (r) =>
+          (r.stageKey === "CO_V_VOS" && r.subStatus === "Done") ||
+          (r.stageKey === "AA_SA" && r.subStatus === "Done"),
+      ),
+    [view],
+  );
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Title */}
@@ -1157,8 +1176,7 @@ export default function ChangeOrdersDashboard({
         </div>
       </div>
 
-      {/* Stage timeline filter */}
-      <StageTimeline active={stage} onClickStage={(key) => setStage(key)} />
+      {/* (Timeline filter row removed as requested) */}
 
       {/* Search + export */}
       <Filters q={q} setQ={setQ} onExport={() => exportCSV(view)} />
@@ -1208,11 +1226,32 @@ export default function ChangeOrdersDashboard({
             )}
           </section>
 
+          {/* Completed items section */}
+          <section className="mt-6 mb-2">
+            <PathTimeline
+              label="Completed (CO / V / VOS or AA / SA Issued)"
+              stages={[
+                "PRC",
+                "CC Outcome",
+                "CEO / Board Memo",
+                "CO / V / VOS or AA / SA (Issued)",
+              ]}
+            />
+            <ChangeTableHeader />
+            {completedRows.length > 0 ? (
+              completedRows.map((r) => <Row key={r.id} r={r} />)
+            ) : (
+              <div className="px-4 py-4 text-xs text-neutral-500">
+                No completed changes (CO/V/VOS or AA/SA Issued) under current
+                filters.
+              </div>
+            )}
+          </section>
+
           {/* If there are no PCR rows at all but other rows exist */}
           {pcrRows.length === 0 && view.length > 0 && (
             <div className="px-4 py-4 text-xs text-neutral-500">
-              Current filters match only non-PCR records (EI / CO etc.), which
-              are not shown in the pipeline tables above.
+              Current filters match only non-PCR records (EI / CO etc.).
             </div>
           )}
 
