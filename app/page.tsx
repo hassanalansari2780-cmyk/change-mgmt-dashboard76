@@ -488,16 +488,16 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   const k = useMemo(() => {
     const totalCOValue = rows.reduce(
       (sum, r) => sum + (r.estimated ?? 0),
-      0
+      0,
     );
 
     const approvedRows = rows.filter(
-      (r) => r.outcome === "Approved" && typeof r.actual === "number"
+      (r) => r.outcome === "Approved" && typeof r.actual === "number",
     );
 
     const totalApprovedValue = approvedRows.reduce(
       (sum, r) => sum + (r.actual ?? 0),
-      0
+      0,
     );
 
     const changePercentage = TOTAL_PROJECT_VALUE
@@ -507,18 +507,12 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     return {
       totalProjectValue: TOTAL_PROJECT_VALUE,
       totalCOValue,
-      changePercentage,
       totalApprovedValue,
+      changePercentage,
     };
   }, [rows]);
 
-  // Detail handlers for the KPI cards
-  const handleTotalProjectDetails = () => {
-    alert(
-      "Total Project Value = the baseline contract value for the project. In this demo it is fixed at AED 500,000,000."
-    );
-  };
-
+  // --- Details pop-ups (simple for now) ---
   const handleTotalChangeDetails = () => {
     alert(
       "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters."
@@ -533,49 +527,50 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
 
   const handleChangePercentDetails = () => {
     alert(
-      "Change % of Project = (Total Change Order Value ÷ Total Project Value) × 100."
+      "Change % of Project = Total Change Order Value ÷ Total Project Value × 100 (based on the visible items)."
     );
   };
 
-  // KPI card component
-const Item = ({
-  label,
-  value,
-  onDetails,
-}: {
-  label: string;
-  value: string;
-  onDetails?: () => void;
-}) => (
-  <Card className="rounded-2xl shadow-sm h-[180px] flex">
-    <CardContent className="p-4 flex flex-col justify-between w-full">
-      <div>
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className="text-xl font-bold mt-1 leading-tight break-words">
-          {value}
+  // --- Single KPI card ---
+  const Item = ({
+    label,
+    value,
+    onDetails,
+  }: {
+    label: string;
+    value: string;
+    onDetails?: () => void;
+  }) => (
+    <Card className="h-full rounded-2xl shadow-sm">
+      <CardContent className="h-full flex flex-col justify-between p-4">
+        <div>
+          <div className="text-xs md:text-sm font-medium text-muted-foreground">
+            {label}
+          </div>
+          <div className="mt-2 text-lg sm:text-xl md:text-2xl font-semibold tracking-tight tabular-nums leading-tight">
+            {value}
+          </div>
         </div>
-      </div>
 
-      {onDetails && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="self-start mt-2 rounded-2xl px-3 py-1 text-xs"
-          onClick={onDetails}
-        >
-          Details
-        </Button>
-      )}
-    </CardContent>
-  </Card>
-);
+        {onDetails && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-4 self-start rounded-2xl px-3 py-1 text-xs"
+            onClick={onDetails}
+          >
+            Details
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
-        onDetails={handleTotalProjectDetails}
       />
       <Item
         label="Total Change Order Value"
