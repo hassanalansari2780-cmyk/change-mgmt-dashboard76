@@ -1109,16 +1109,18 @@ export default function ChangeOrdersDashboard({
           </div>
 
           {/* Table header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b sticky top-0 z-10">
-            <div className="col-span-1">Ref ID</div>
-            <div className="col-span-1">Package</div>
-            <div className="col-span-3">Title</div>
-            <div className="col-span-2">Stage</div>
-            <div className="col-span-1">PCR Target</div>
-            <div className="col-span-2">Sponsor</div>
-            <div className="col-span-1 text-right">Estimated</div>
-            <div className="col-span-1 text-right">Actual</div>
-          </div>
+<div className="grid grid-cols-12 gap-4 px-4 py-4 text-xs font-semibold text-neutral-500 bg-white sticky top-0 z-10">
+  <div className="col-span-1">Ref ID</div>
+  <div className="col-span-1">Package</div>
+  <div className="col-span-2">Title</div>
+  <div className="col-span-2">Stage</div>
+  <div className="col-span-1">PCR Target</div>
+  <div className="col-span-2">Sponsor</div>
+  <div className="col-span-1 text-right">Estimated</div>
+  <div className="col-span-1 text-right">Actual</div>
+  <div className="col-span-1 text-right">Variance</div>
+</div>
+
 
           {/* Rows */}
           {view.map((r) => (
