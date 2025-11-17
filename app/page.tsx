@@ -532,39 +532,43 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   };
 
   // --- Single KPI card ---
-  const Item = ({
-    label,
-    value,
-    onDetails,
-  }: {
-    label: string;
-    value: string;
-    onDetails?: () => void;
-  }) => (
-    <Card className="h-full rounded-2xl shadow-sm">
-      <CardContent className="h-full flex flex-col justify-between p-4">
-        <div>
-          <div className="text-xs md:text-sm font-medium text-muted-foreground">
-            {label}
-          </div>
-          <div className="mt-2 text-lg sm:text-xl md:text-2xl font-semibold tracking-tight tabular-nums leading-tight">
-            {value}
-          </div>
+const Item = ({
+  label,
+  value,
+  onDetails,
+}: {
+  label: string;
+  value: string;
+  onDetails?: () => void;
+}) => (
+  <Card className="rounded-2xl shadow-sm h-[180px]">
+    <CardContent className="p-4 h-full flex flex-col justify-between">
+      
+      {/* Title + Value */}
+      <div className="flex flex-col space-y-1">
+        <div className="text-sm text-muted-foreground leading-none">
+          {label}
         </div>
 
-        {onDetails && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-4 self-start rounded-2xl px-3 py-1 text-xs"
-            onClick={onDetails}
-          >
-            Details
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
+        <div className="text-xl font-semibold leading-tight whitespace-nowrap">
+          {value}
+        </div>
+      </div>
+
+      {/* Details Button */}
+      {onDetails && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-2xl px-3 py-1 text-xs self-start"
+          onClick={onDetails}
+        >
+          Details
+        </Button>
+      )}
+    </CardContent>
+  </Card>
+);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
