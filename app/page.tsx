@@ -55,6 +55,8 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
+  target?: "EI" | "CO" | "TBC";      // PCR target (if type = PRC)
+  sponsor?: string;                  // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
@@ -781,103 +783,110 @@ function Row({ r }: { r: ChangeRecord }) {
   const showSignatures = !!(r.signatureList && r.signatureList.length);
   const showClosedSummary = r.stageKey === FINAL_KEY;
 
-  const prcLabel = formatPcrTargetLabel(r.prcTarget);
+  const prcLabel =
+    r.type === "PRC" && r.target
+      ? r.target === "EI"
+        ? "PCR → EI"
+        : r.target === "CO"
+        ? "PCR → CO"
+        : null
+      : null;
 
-<div className="grid grid-cols-12 items-center px-3 py-3 hover:bg-muted/40">
-  {/* Ref ID + attachments */}
-  <div className="col-span-1">
-    <div className="font-medium">{r.id}</div>
+  return (
+    <div className="border-b last:border-b-0">
+      <div className="grid grid-cols-12 items-center px-3 py-3 hover:bg-muted/40">
+        {/* Ref ID + attachments */}
+        <div className="col-span-1">
+          <div className="font-medium">{r.id}</div>
+          {r.links?.length ? (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {r.links.map((lnk, i) => (
+                <a
+                  key={i}
+                  href={lnk.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/70 mt-1"
+                  title={lnk.href}
+                >
+                  <Paperclip className="w-3.5 h-3.5 mr-1" /> {lnk.label}
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
-    {r.links?.length ? (
-      <div className="mt-1 flex flex-wrap gap-1">
-        {r.links.map((lnk, i) => (
-          <a
-            key={i}
-            href={lnk.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/70 mt-1"
-            title={lnk.href}
-          >
-            <Paperclip className="w-3.5 h-3.5 mr-1" /> {lnk.label}
-          </a>
-        ))}
+        {/* Package */}
+        <div className="col-span-1">
+          <div className="w-8 h-8 rounded-full bg-muted grid place-items-center font-semibold">
+            {r.package}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="col-span-3 truncate">{r.title}</div>
+
+        {/* Stage + progress + SLA + Details */}
+        <div className="col-span-2">
+          <div className="relative inline-flex items-center gap-2">
+            <div
+              className={clsx(
+                "px-2 py-1 rounded-2xl text-xs font-semibold",
+                s.color,
+              )}
+            >
+              {s.name}
+            </div>
+            {r.subStatus && (
+              <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
+                {r.subStatus}
+              </Badge>
+            )}
+          </div>
+          <div className="mt-1">
+            <Progress value={pct} className="h-2" />
+            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+              <span>
+                Day {days} / SLA {s.slaDays}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-2xl h-6 px-2 text-[11px]"
+                onClick={() => setOpen((v) => !v)}
+              >
+                {open ? "Hide" : "Details"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* PCR Target */}
+        <div className="col-span-1">
+          {prcLabel && (
+            <Badge className="rounded-2xl bg-amber-100 text-amber-900 border border-amber-200">
+              {prcLabel}
+            </Badge>
+          )}
+        </div>
+
+        {/* Sponsor */}
+        <div className="col-span-2">
+          {r.sponsor && (
+            <div className="text-xs text-muted-foreground">{r.sponsor}</div>
+          )}
+        </div>
+
+        {/* Estimated */}
+        <div className="col-span-1 text-right tabular-nums">
+          {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
+        </div>
+
+        {/* Actual */}
+        <div className="col-span-1 text-right tabular-nums">
+          {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
+        </div>
       </div>
-    ) : null}
-  </div>
-
-  {/* Package */}
-  <div className="col-span-1">
-    <div className="w-8 h-8 rounded-full bg-muted grid place-items-center font-semibold">
-      {r.package}
-    </div>
-  </div>
-
-  {/* Title */}
-  <div className="col-span-3 truncate">{r.title}</div>
-
-  {/* Stage + progress + SLA + Details button */}
-  <div className="col-span-2">
-    <div className="relative inline-flex items-center gap-2">
-      <div
-        className={clsx(
-          "px-2 py-1 rounded-2xl text-xs font-semibold",
-          s.color,
-        )}
-      >
-        {s.name}
-      </div>
-      {r.subStatus && (
-        <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
-          {r.subStatus}
-        </Badge>
-      )}
-    </div>
-    <div className="mt-1">
-      <Progress value={pct} className="h-2" />
-      <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
-        <span>
-          Day {days} / SLA {s.slaDays}
-        </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="rounded-2xl h-6 px-2 text-[11px]"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? "Hide" : "Details"}
-        </Button>
-      </div>
-    </div>
-  </div>
-
-  {/* PCR Target */}
-  <div className="col-span-1">
-    {prcLabel && (
-      <Badge className="rounded-2xl bg-amber-100 text-amber-900 border border-amber-200">
-        {prcLabel}
-      </Badge>
-    )}
-  </div>
-
-  {/* Sponsor */}
-  <div className="col-span-2">
-    {r.sponsor && (
-      <div className="text-xs text-muted-foreground">{r.sponsor}</div>
-    )}
-  </div>
-
-  {/* Estimated */}
-  <div className="col-span-1 text-right tabular-nums">
-    {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
-  </div>
-
-  {/* Actual */}
-  <div className="col-span-1 text-right tabular-nums">
-    {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
-  </div>
-</div>
-
 
       {open && (
         <div className="px-3 pb-4 bg-muted/30">
@@ -889,21 +898,18 @@ function Row({ r }: { r: ChangeRecord }) {
                   Stage Progress —{" "}
                   <span className={stageTextClass(s.color)}>{s.name}</span>
                 </div>
-
                 {(() => {
                   const opts = STAGE_OPTIONS[r.stageKey];
                   const currentIdx = Math.max(
                     0,
                     opts.findIndex((o) => o === (r.subStatus ?? "")),
                   );
-
                   return (
                     <div className="space-y-4">
                       {opts.map((opt, idx) => {
                         const isCurrent = idx === currentIdx;
                         const isCompleted = idx < currentIdx;
                         const isFuture = idx > currentIdx;
-
                         return (
                           <div key={opt} className="flex items-start gap-3">
                             <div
@@ -912,6 +918,7 @@ function Row({ r }: { r: ChangeRecord }) {
                                 isCurrent &&
                                   "bg-emerald-600 border-emerald-600",
                                 isCompleted &&
+                                  !isCurrent &&
                                   "bg-emerald-50 border-emerald-600",
                                 isFuture &&
                                   "bg-white border-muted-foreground",
@@ -1026,7 +1033,7 @@ function Row({ r }: { r: ChangeRecord }) {
               </CardContent>
             </Card>
 
-            {/* 4) Final summary if closed */}
+            {/* 4) Final Summary if closed */}
             {showClosedSummary && (
               <Card className="rounded-2xl md:order-4">
                 <CardContent className="p-4">
@@ -1050,7 +1057,9 @@ function Row({ r }: { r: ChangeRecord }) {
                       Variance:{" "}
                       {variance(r.estimated, r.actual) === null
                         ? "—"
-                        : `${variance(r.estimated, r.actual)! < 0 ? "-" : "+"}${fmt.format(
+                        : `${
+                            variance(r.estimated, r.actual)! < 0 ? "-" : "+"
+                          }${fmt.format(
                             Math.abs(variance(r.estimated, r.actual)!),
                           )}`}
                     </div>
@@ -1148,7 +1157,6 @@ export default function ChangeOrdersDashboard({
   <div className="col-span-1 text-right">Estimated</div>
   <div className="col-span-1 text-right">Actual</div>
 </div>
-
 
           {view.map((r) => (
             <Row key={r.id} r={r} />
