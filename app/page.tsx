@@ -1149,16 +1149,17 @@ export default function ChangeOrdersDashboard({
 
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-          <div className="grid grid-cols-12 px-3 py-3 text-xs uppercase tracking-wide text-muted-foreground border-b bg-muted/40">
-            <div className="col-span-2">Ref ID / PCR Target / Sponsor</div>
-            <div className="col-span-1">Package</div>
-            <div className="col-span-3">Title</div>
-            <div className="col-span-3">Stage</div>
-            <div className="col-span-1 text-right">Estimated</div>
-            <div className="col-span-1 text-right">Actual</div>
-            <div className="col-span-1 text-right">Variance</div>
-            <div className="col-span-1 text-right">SLA</div>
-          </div>
+<div className="grid grid-cols-12 px-3 py-3 text-xs uppercase tracking-wide text-muted-foreground border-b bg-muted/40">
+  <div className="col-span-1">Ref ID</div>
+  <div className="col-span-1">Package</div>
+  <div className="col-span-3">Title</div>
+  <div className="col-span-2">Stage</div>
+  <div className="col-span-1">PCR Target</div>
+  <div className="col-span-2">Sponsor</div>
+  <div className="col-span-1 text-right">Estimated</div>
+  <div className="col-span-1 text-right">Actual</div>
+</div>
+
 
           {view.map((r) => (
             <Row key={r.id} r={r} />
