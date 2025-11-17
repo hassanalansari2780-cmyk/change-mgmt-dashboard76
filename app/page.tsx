@@ -488,36 +488,22 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   const k = useMemo(() => {
     const totalCOValue = rows.reduce(
       (sum, r) => sum + (r.estimated ?? 0),
-      0,
+      0
     );
+
     const approvedRows = rows.filter(
-      (r) => r.outcome === "Approved" && typeof r.actual === "number",
+      (r) => r.outcome === "Approved" && typeof r.actual === "number"
     );
+
     const totalApprovedValue = approvedRows.reduce(
       (sum, r) => sum + (r.actual ?? 0),
-      0,
+      0
     );
 
     const changePercentage = TOTAL_PROJECT_VALUE
       ? ((totalCOValue / TOTAL_PROJECT_VALUE) * 100).toFixed(2)
       : "0.00";
-const handleTotalChangeDetails = () => {
-  alert(
-    "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters."
-  );
-};
 
-const handleApprovedChangeDetails = () => {
-  alert(
-    "Total Approved Change Value = sum of the ACTUAL values for all changes with outcome = Approved and an Actual value."
-  );
-};
-
-const handleChangePercentDetails = () => {
-  alert(
-    "Change % of Project = Total Change Order Value ÷ Total Project Value × 100."
-  );
-};
     return {
       totalProjectValue: TOTAL_PROJECT_VALUE,
       totalCOValue,
@@ -526,60 +512,80 @@ const handleChangePercentDetails = () => {
     };
   }, [rows]);
 
-const Item = ({
-  label,
-  value,
-  onDetails,
-}: {
-  label: string;
-  value: string;
-  onDetails?: () => void;
-}) => (
-  <Card className="rounded-2xl shadow-sm h-full">
-    <CardContent className="p-4 flex flex-col justify-between min-h-[140px]">
-      <div>
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className="text-2xl font-semibold mt-1">{value}</div>
-      </div>
+  // Detail handlers for the KPI cards
+  const handleTotalChangeDetails = () => {
+    alert(
+      "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters."
+    );
+  };
 
-      {onDetails && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="self-start mt-3 rounded-2xl px-3 py-1 text-xs"
-          onClick={onDetails}
-        >
-          Details
-        </Button>
-      )}
-    </CardContent>
-  </Card>
-);
+  const handleApprovedChangeDetails = () => {
+    alert(
+      "Total Approved Change Value = sum of the ACTUAL values for all changes with outcome = Approved and an Actual value."
+    );
+  };
 
-return (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
-    <Item
-      label="Total Project Value"
-      value={fmt.format(k.totalProjectValue)}
-      // no Details button here
-    />
-    <Item
-      label="Total Change Order Value"
-      value={fmt.format(k.totalCOValue)}
-      onDetails={handleTotalChangeDetails}
-    />
-    <Item
-      label="Total Approved Change Value"
-      value={fmt.format(k.totalApprovedValue)}
-      onDetails={handleApprovedChangeDetails}
-    />
-    <Item
-      label="Change % of Project"
-      value={`${k.changePercentage}%`}
-      onDetails={handleChangePercentDetails}
-    />
-  </div>
-);
+  const handleChangePercentDetails = () => {
+    alert(
+      "Change % of Project = (Total Change Order Value ÷ Total Project Value) × 100."
+    );
+  };
+
+  // KPI card component
+  const Item = ({
+    label,
+    value,
+    onDetails,
+  }: {
+    label: string;
+    value: string;
+    onDetails?: () => void;
+  }) => (
+    <Card className="rounded-2xl shadow-sm h-full">
+      <CardContent className="p-4 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <div className="text-sm text-muted-foreground">{label}</div>
+          <div className="text-2xl font-semibold mt-1">{value}</div>
+        </div>
+
+        {onDetails && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start mt-3 rounded-2xl px-3 py-1 text-xs"
+            onClick={onDetails}
+          >
+            Details
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
+      <Item
+        label="Total Project Value"
+        value={fmt.format(k.totalProjectValue)}
+        // no Details button for this one
+      />
+      <Item
+        label="Total Change Order Value"
+        value={fmt.format(k.totalCOValue)}
+        onDetails={handleTotalChangeDetails}
+      />
+      <Item
+        label="Total Approved Change Value"
+        value={fmt.format(k.totalApprovedValue)}
+        onDetails={handleApprovedChangeDetails}
+      />
+      <Item
+        label="Change % of Project"
+        value={`${k.changePercentage}%`}
+        onDetails={handleChangePercentDetails}
+      />
+    </div>
+  );
 }
 
 // ==========================================
