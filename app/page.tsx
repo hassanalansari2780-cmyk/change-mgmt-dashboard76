@@ -1071,50 +1071,46 @@ export default function ChangeOrdersDashboard({
 
   return (
     <div className="p-4 md:p-6 space-y-4">
+      {/* Title */}
       <div className="w-full text-center text-3xl font-semibold tracking-tight mb-2">
         Change Management Dashboard
       </div>
 
+      {/* Summary + KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <SummaryCard rows={view} />
+        <div className="md:col-span-2">
+          <ProjectKPIs rows={view} />
+        </div>
+      </div>
 
-      <SummaryCard rows={view} />
-
-      <ProjectKPIs rows={view} />
-
+      {/* Stage timeline filter */}
       <StageTimeline active={stage} onClickStage={(key) => setStage(key)} />
 
+      {/* Search + export */}
       <Filters q={q} setQ={setQ} onExport={() => exportCSV(view)} />
 
+      {/* Main table + package filter */}
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-          <Card className="rounded-2xl overflow-hidden">
-  <CardContent className="p-0">
-    <div className="px-4 pt-4 pb-2 bg-white">
-      <PackageChips selected={pkg} onSelect={setPkg} />
-    </div>
+          {/* Package chips moved to top of table */}
+          <div className="px-4 pt-4 pb-2 bg-white">
+            <PackageChips selected={pkg} onSelect={setPkg} />
+          </div>
 
-    <div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b">
-      <div className="col-span-1">Ref ID</div>
-      <div className="col-span-1">Package</div>
-      <div className="col-span-3">Title</div>
-      <div className="col-span-2">Stage</div>
-      <div className="col-span-1">PCR Target</div>
-      <div className="col-span-2">Sponsor</div>
-      <div className="col-span-1 text-right">Estimated</div>
-      <div className="col-span-1 text-right">Actual</div>
-    </div>
-    ...
+          {/* Table header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b sticky top-0 z-10">
+            <div className="col-span-1">Ref ID</div>
+            <div className="col-span-1">Package</div>
+            <div className="col-span-3">Title</div>
+            <div className="col-span-2">Stage</div>
+            <div className="col-span-1">PCR Target</div>
+            <div className="col-span-2">Sponsor</div>
+            <div className="col-span-1 text-right">Estimated</div>
+            <div className="col-span-1 text-right">Actual</div>
+          </div>
 
-<div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b sticky top-0 z-10">
-  <div className="col-span-1">Ref ID</div>
-  <div className="col-span-1">Package</div>
-  <div className="col-span-3">Title</div>
-  <div className="col-span-2">Stage</div>
-  <div className="col-span-1">PCR Target</div>
-  <div className="col-span-2">Sponsor</div>
-  <div className="col-span-1 text-right">Estimated</div>
-  <div className="col-span-1 text-right">Actual</div>
-</div>
-
+          {/* Rows */}
           {view.map((r) => (
             <Row key={r.id} r={r} />
           ))}
@@ -1127,12 +1123,14 @@ export default function ChangeOrdersDashboard({
         </CardContent>
       </Card>
 
+      {/* Footer note */}
       <div className="text-xs text-muted-foreground">
         Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI → CO/V/VOS
-        → AA/SA. SLA &amp; progress are derived directly from the stage and dates.
-        PCRs that are intended to lead to EI or CO are tagged, and sponsors are
+        → AA/SA. SLA &amp; progress are derived directly from the stage and
+        dates. PCRs intended to lead to EI or CO are tagged, and sponsors are
         visible under each reference.
       </div>
     </div>
   );
 }
+
