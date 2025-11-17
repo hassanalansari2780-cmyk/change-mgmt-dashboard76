@@ -538,38 +538,40 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   };
 
   // KPI card component
-  const Item = ({
-    label,
-    value,
-    onDetails,
-  }: {
-    label: string;
-    value: string;
-    onDetails: () => void;
-  }) => (
-    <Card className="rounded-2xl shadow-sm h-full">
-      <CardContent className="p-4 flex flex-col justify-between min-h-[150px]">
-        <div>
-          <div className="text-sm text-muted-foreground">{label}</div>
-          <div className="mt-1 text-xl md:text-2xl font-semibold leading-tight">
-            {value}
-          </div>
+const Item = ({
+  label,
+  value,
+  onDetails,
+}: {
+  label: string;
+  value: string;
+  onDetails?: () => void;
+}) => (
+  <Card className="rounded-2xl shadow-sm h-[180px] flex">
+    <CardContent className="p-4 flex flex-col justify-between w-full">
+      <div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className="text-xl font-bold mt-1 leading-tight break-words">
+          {value}
         </div>
+      </div>
 
+      {onDetails && (
         <Button
           variant="ghost"
           size="sm"
-          className="self-start mt-3 rounded-2xl px-3 py-1 text-xs"
+          className="self-start mt-2 rounded-2xl px-3 py-1 text-xs"
           onClick={onDetails}
         >
           Details
         </Button>
-      </CardContent>
-    </Card>
-  );
+      )}
+    </CardContent>
+  </Card>
+);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-stretch">
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
