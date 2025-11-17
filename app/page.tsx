@@ -1104,7 +1104,7 @@ export default function ChangeOrdersDashboard({
 
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-<div className="grid grid-cols-12 gap-4 px-4 py-4 text-xs font-semibold text-neutral-500 bg-white sticky top-0 z-10">
+<div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b sticky top-0 z-10">
   <div className="col-span-1">Ref ID</div>
   <div className="col-span-1">Package</div>
   <div className="col-span-3">Title</div>
