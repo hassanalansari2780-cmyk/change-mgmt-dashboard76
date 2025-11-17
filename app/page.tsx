@@ -55,8 +55,8 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
-  target?: "EI" | "CO" | "TBC";      // PCR target (if type = PRC)
-  sponsor?: string;                  // Change sponsor
+  target?: "EI" | "CO" | "TBC"; // PCR target (if type = PRC)
+  sponsor?: string; // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
@@ -222,7 +222,7 @@ function stageTextClass(color: string) {
 }
 
 // ==========================================
-// Demo data (with PRC target + sponsor)
+// Demo data
 // ==========================================
 const DEMO: ChangeRecord[] = [
   {
@@ -236,8 +236,7 @@ const DEMO: ChangeRecord[] = [
     stageStartDate: "2026-01-05",
     overallStartDate: "2026-01-05",
 
-    // NEW
-    target: "EI", // this PCR is intended to lead to an EI
+    target: "EI",
     sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
 
     reviewList: [
@@ -270,8 +269,7 @@ const DEMO: ChangeRecord[] = [
     stageStartDate: "2026-01-12",
     overallStartDate: "2026-01-12",
 
-    // NEW
-    target: "CO", // this PCR is intended to lead to a CO
+    target: "CO",
     sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
 
     reviewList: [
@@ -516,28 +514,27 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     </Card>
   );
 
-return (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <Item
-      label="Total Project Value"
-      value={fmt.format(k.totalProjectValue)}
-    />
-    <Item
-      label="Total Change Order Value"
-      value={fmt.format(k.totalCOValue)}
-    />
-    <Item
-      label="Total Approved Change Value"
-      value={fmt.format(k.totalApprovedValue)}
-    />
-    <Item label="Change % of Project" value={`${k.changePercentage}%`} />
-  </div>
-);
-
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <Item
+        label="Total Project Value"
+        value={fmt.format(k.totalProjectValue)}
+      />
+      <Item
+        label="Total Change Order Value"
+        value={fmt.format(k.totalCOValue)}
+      />
+      <Item
+        label="Total Approved Change Value"
+        value={fmt.format(k.totalApprovedValue)}
+      />
+      <Item label="Change % of Project" value={`${k.changePercentage}%`} />
+    </div>
+  );
 }
 
 // ==========================================
-// Stage timeline
+// Stage timeline filter (top of page)
 // ==========================================
 function StageTimeline({
   active,
@@ -552,9 +549,9 @@ function StageTimeline({
       : -1;
 
   return (
-  <div className="w-full flex justify-center py-2">
-    <div className="flex items-center gap-4 overflow-x-auto px-1 max-w-full">
-      {STAGES.map((s, i) => {
+    <div className="w-full flex justify-center py-2">
+      <div className="flex items-center gap-4 overflow-x-auto px-1 max-w-full">
+        {STAGES.map((s, i) => {
           const isActive = active && active !== "All" && s.key === active;
           const isDone = activeIdx >= 0 && i <= activeIdx;
           const connDone = activeIdx >= 0 && i < activeIdx;
@@ -597,6 +594,55 @@ function StageTimeline({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ==========================================
+// Path timeline (for each table section)
+// ==========================================
+type PathTimelineProps = {
+  label: string;
+  stages: string[];
+};
+
+function PathTimeline({ label, stages }: PathTimelineProps) {
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between px-4 pt-4 pb-2 gap-2">
+      <div className="text-sm font-semibold text-neutral-800">{label}</div>
+      <div className="flex items-center gap-2 text-[11px] text-neutral-700 flex-wrap">
+        {stages.map((s, i) => (
+          <div key={s} className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-neutral-100 text-neutral-900 font-medium">
+              {s}
+            </span>
+            {i < stages.length - 1 && (
+              <span className="text-neutral-300 text-base leading-none">
+                →
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// Common table header
+// ==========================================
+function ChangeTableHeader() {
+  return (
+    <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-semibold text-neutral-500 bg-white border-y">
+      <div className="col-span-1">Ref ID</div>
+      <div className="col-span-1">Package</div>
+      <div className="col-span-2">Title</div>
+      <div className="col-span-2">Stage</div>
+      <div className="col-span-1">PCR Target</div>
+      <div className="col-span-2">Sponsor</div>
+      <div className="col-span-1 text-right">Estimated</div>
+      <div className="col-span-1 text-right">Actual</div>
+      <div className="col-span-1 text-right">Variance</div>
     </div>
   );
 }
@@ -727,122 +773,122 @@ function Row({ r }: { r: ChangeRecord }) {
   const showReview = !!(r.reviewList && r.reviewList.length);
   const showSignatures = !!(r.signatureList && r.signatureList.length);
   const showClosedSummary = r.stageKey === FINAL_KEY;
-  const isClosed = r.stageKey === FINAL_KEY; // or whatever key you use for AA/SA Done
-  
+  const isClosed = r.stageKey === FINAL_KEY;
+
   return (
-<div className="border-b last:border-b-0 bg-white">
-  <div className="grid grid-cols-12 gap-4 px-6 py-3 items-start">
-    {/* Ref ID + documents (col 1) */}
-    <div className="col-span-1">
-      <div className="text-sm font-medium">{r.id}</div>
-      {hasDocs && (
-        <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
-          {r.links!.map((lnk, i) => (
-            <a
-              key={i}
-              href={lnk.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:underline"
-            >
-              <Paperclip className="w-3.5 h-3.5" />
-              <span className="truncate">{lnk.label}</span>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
-
-    {/* Package (col 2) */}
-    <div className="col-span-1">
-      <div className="w-8 h-8 rounded-full bg-muted grid place-items-center text-sm font-semibold">
-        {r.package}
-      </div>
-    </div>
-
-    {/* Title (col 3–4) */}
-    <div className="col-span-2">
-      <div className="text-sm">{r.title}</div>
-    </div>
-
-    {/* Stage (no green progress bar) (col 5–6) */}
-    <div className="col-span-2">
-      <div className="inline-flex items-center gap-2 mb-1">
-        <span
-          className={clsx(
-            "px-2 py-1 rounded-2xl text-xs font-semibold",
-            s.color
+    <div className="border-b last:border-b-0 bg-white">
+      <div className="grid grid-cols-12 gap-4 px-6 py-3 items-start">
+        {/* Ref ID + documents (col 1) */}
+        <div className="col-span-1">
+          <div className="text-sm font-medium">{r.id}</div>
+          {hasDocs && (
+            <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
+              {r.links!.map((lnk, i) => (
+                <a
+                  key={i}
+                  href={lnk.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  <span className="truncate">{lnk.label}</span>
+                </a>
+              ))}
+            </div>
           )}
-        >
-          {s.name}
-        </span>
-        {r.subStatus && (
-          <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
-            {r.subStatus}
-          </Badge>
-        )}
-      </div>
-      <div className="text-[11px] text-muted-foreground">
-        Day {days} / SLA {s.slaDays}
-      </div>
-      <div className="mt-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="rounded-2xl px-3 py-1 text-xs"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? "Hide details" : "Details"}
-        </Button>
-      </div>
-    </div>
+        </div>
 
-    {/* PCR Target (col 7) */}
-    <div className="col-span-1">
-      {r.type === "PRC" && r.target && (
-        <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-medium">
-          PCR → {r.target}
-          {isClosed && (
-            <span className="ml-2 text-[10px] uppercase tracking-wide">
-              Closed
+        {/* Package (col 2) */}
+        <div className="col-span-1">
+          <div className="w-8 h-8 rounded-full bg-muted grid place-items-center text-sm font-semibold">
+            {r.package}
+          </div>
+        </div>
+
+        {/* Title (col 3–4) */}
+        <div className="col-span-2">
+          <div className="text-sm">{r.title}</div>
+        </div>
+
+        {/* Stage (col 5–6) */}
+        <div className="col-span-2">
+          <div className="inline-flex items-center gap-2 mb-1">
+            <span
+              className={clsx(
+                "px-2 py-1 rounded-2xl text-xs font-semibold",
+                s.color,
+              )}
+            >
+              {s.name}
+            </span>
+            {r.subStatus && (
+              <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
+                {r.subStatus}
+              </Badge>
+            )}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Day {days} / SLA {s.slaDays}
+          </div>
+          <div className="mt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="rounded-2xl px-3 py-1 text-xs"
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? "Hide details" : "Details"}
+            </Button>
+          </div>
+        </div>
+
+        {/* PCR Target (col 7) */}
+        <div className="col-span-1">
+          {r.type === "PRC" && r.target && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-medium">
+              PCR → {r.target}
+              {isClosed && (
+                <span className="ml-2 text-[10px] uppercase tracking-wide">
+                  Closed
+                </span>
+              )}
             </span>
           )}
-        </span>
-      )}
-    </div>
+        </div>
 
-    {/* Sponsor (col 8–9) */}
-    <div className="col-span-2 truncate text-sm">
-      {r.sponsor ?? "—"}
-    </div>
+        {/* Sponsor (col 8–9) */}
+        <div className="col-span-2 truncate text-sm">
+          {r.sponsor ?? "—"}
+        </div>
 
-    {/* Estimated (col 10) */}
-    <div className="col-span-1 text-right">
-      <div className="text-sm tabular-nums">
-        {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
+        {/* Estimated (col 10) */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
+          </div>
+        </div>
+
+        {/* Actual (col 11) */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
+          </div>
+        </div>
+
+        {/* Variance (col 12) */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {varianceValue === null
+              ? "—"
+              : `${varianceValue > 0 ? "+" : varianceValue < 0 ? "-" : ""}${fmt.format(
+                  Math.abs(varianceValue),
+                )}`}
+          </div>
+        </div>
       </div>
-    </div>
 
-    {/* Actual (col 11) */}
-    <div className="col-span-1 text-right">
-      <div className="text-sm tabular-nums">
-        {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
-      </div>
-    </div>
-
-    {/* Variance (col 12) */}
-    <div className="col-span-1 text-right">
-      <div className="text-sm tabular-nums">
-        {varianceValue === null
-          ? "—"
-          : `${varianceValue > 0 ? "+" : varianceValue < 0 ? "-" : ""}${fmt.format(
-              Math.abs(varianceValue)
-            )}`}
-      </div>
-    </div>
-  </div>
-
-      {/* ── EXPANDED DETAILS BELOW ROW ─────────────────────── */}
+      {/* Expanded details */}
       {open && (
         <div className="px-6 pb-4 bg-muted/30">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -857,7 +903,7 @@ function Row({ r }: { r: ChangeRecord }) {
                   const opts = STAGE_OPTIONS[r.stageKey];
                   const currentIdx = Math.max(
                     0,
-                    opts.findIndex((o) => o === (r.subStatus ?? ""))
+                    opts.findIndex((o) => o === (r.subStatus ?? "")),
                   );
                   return (
                     <div className="space-y-4">
@@ -876,7 +922,7 @@ function Row({ r }: { r: ChangeRecord }) {
                                   !isCurrent &&
                                   "bg-emerald-50 border-emerald-600",
                                 isFuture &&
-                                  "bg-white border-muted-foreground"
+                                  "bg-white border-muted-foreground",
                               )}
                             />
                             <div>
@@ -887,7 +933,7 @@ function Row({ r }: { r: ChangeRecord }) {
                                     ? "text-emerald-700 font-medium"
                                     : isCompleted
                                     ? "text-emerald-700"
-                                    : "text-foreground"
+                                    : "text-foreground",
                                 )}
                               >
                                 {opt}
@@ -973,7 +1019,7 @@ function Row({ r }: { r: ChangeRecord }) {
                             "px-2 py-1 rounded-full",
                             sg.signed
                               ? "bg-emerald-100 text-emerald-900"
-                              : "bg-amber-100 text-amber-900"
+                              : "bg-amber-100 text-amber-900",
                           )}
                         >
                           {sg.signed ? "Signed" : "Pending"}
@@ -1013,7 +1059,7 @@ function Row({ r }: { r: ChangeRecord }) {
                       {varianceValue === null
                         ? "—"
                         : `${varianceValue > 0 ? "+" : ""}${fmt.format(
-                            varianceValue
+                            varianceValue,
                           )}`}
                     </div>
                   </div>
@@ -1082,6 +1128,20 @@ export default function ChangeOrdersDashboard({
     [rows, stage, pkg, q],
   );
 
+  // Separate into PCR pipelines
+  const pcrRows = useMemo(
+    () => view.filter((r) => r.type === "PRC"),
+    [view],
+  );
+  const pcrToEiRows = useMemo(
+    () => pcrRows.filter((r) => r.target === "EI"),
+    [pcrRows],
+  );
+  const pcrToCoRows = useMemo(
+    () => pcrRows.filter((r) => r.target === "CO"),
+    [pcrRows],
+  );
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Title */}
@@ -1106,29 +1166,57 @@ export default function ChangeOrdersDashboard({
       {/* Main table + package filter */}
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-          {/* Package chips moved to top of table */}
+          {/* Package chips at top of table */}
           <div className="px-4 pt-4 pb-2 bg-white">
             <PackageChips selected={pkg} onSelect={setPkg} />
           </div>
 
-          {/* Table header */}
-<div className="grid grid-cols-12 gap-4 px-4 py-4 text-xs font-semibold text-neutral-500 bg-white sticky top-0 z-10">
-  <div className="col-span-1">Ref ID</div>
-  <div className="col-span-1">Package</div>
-  <div className="col-span-2">Title</div>
-  <div className="col-span-2">Stage</div>
-  <div className="col-span-1">PCR Target</div>
-  <div className="col-span-2">Sponsor</div>
-  <div className="col-span-1 text-right">Estimated</div>
-  <div className="col-span-1 text-right">Actual</div>
-  <div className="col-span-1 text-right">Variance</div>
-</div>
+          {/* PCR → EI section */}
+          <section>
+            <PathTimeline
+              label="PCRs intended to lead to EI"
+              stages={["PRC", "CC Outcome", "CEO / Board Memo", "EI"]}
+            />
+            <ChangeTableHeader />
+            {pcrToEiRows.length > 0 ? (
+              pcrToEiRows.map((r) => <Row key={r.id} r={r} />)
+            ) : (
+              <div className="px-4 py-4 text-xs text-neutral-500">
+                No PCRs currently tagged as PCR → EI after filters.
+              </div>
+            )}
+          </section>
 
-          {/* Rows */}
-          {view.map((r) => (
-            <Row key={r.id} r={r} />
-          ))}
+          {/* PCR → CO / V / VOS section */}
+          <section className="mt-6">
+            <PathTimeline
+              label="PCRs intended to lead to CO / V / VOS / AA-SA"
+              stages={[
+                "PRC",
+                "CC Outcome",
+                "CEO / Board Memo",
+                "CO / V / VOS or AA / SA",
+              ]}
+            />
+            <ChangeTableHeader />
+            {pcrToCoRows.length > 0 ? (
+              pcrToCoRows.map((r) => <Row key={r.id} r={r} />)
+            ) : (
+              <div className="px-4 py-4 text-xs text-neutral-500">
+                No PCRs currently tagged as PCR → CO / V / VOS after filters.
+              </div>
+            )}
+          </section>
 
+          {/* If there are no PCR rows at all but other rows exist */}
+          {pcrRows.length === 0 && view.length > 0 && (
+            <div className="px-4 py-4 text-xs text-neutral-500">
+              Current filters match only non-PCR records (EI / CO etc.), which
+              are not shown in the pipeline tables above.
+            </div>
+          )}
+
+          {/* If absolutely nothing matches */}
           {view.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               No records match the current filters.
@@ -1147,4 +1235,3 @@ export default function ChangeOrdersDashboard({
     </div>
   );
 }
-
