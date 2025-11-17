@@ -438,27 +438,13 @@ function exportCSV(rows: ChangeRecord[]) {
 function computeSummary(rows: ChangeRecord[]) {
   const total = rows.length;
 
-  const isRejected = (r: ChangeRecord) =>
-    r.outcome === "Rejected" ||
-    (r.reviewList ?? []).some((x) =>
-      (x.decision ?? "").toLowerCase().includes("reject"),
-    );
+  const pcrs = rows.filter((r) => r.type === "PRC");
+  const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
+  const pcrToCO = pcrs.filter((r) => r.target === "CO").length;
 
-  const approved = rows.filter(
-    (r) => r.stageKey === FINAL_KEY && r.outcome === "Approved",
-  ).length;
+  const completed = rows.filter((r) => r.stageKey === FINAL_KEY).length;
 
-  const proposed = rows.filter(
-    (r) => r.stageKey === "PRC" && !isRejected(r),
-  ).length;
-
-  const inReview = rows.filter(
-    (r) => r.stageKey !== FINAL_KEY && r.stageKey !== "PRC" && !isRejected(r),
-  ).length;
-
-  const rejected = rows.filter(isRejected).length;
-
-  return { total, approved, inReview, proposed, rejected };
+  return { total, pcrToEI, pcrToCO, completed };
 }
 
 function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
@@ -473,20 +459,16 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
         </div>
         <div className="mt-3 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span>Approved</span>
-            <span>{s.approved}</span>
+            <span>PCR → EI</span>
+            <span>{s.pcrToEI}</span>
           </div>
           <div className="flex justify-between">
-            <span>In Review</span>
-            <span>{s.inReview}</span>
+            <span>PCR → CO</span>
+            <span>{s.pcrToCO}</span>
           </div>
           <div className="flex justify-between">
-            <span>Proposed (PRC)</span>
-            <span>{s.proposed}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Rejected</span>
-            <span>{s.rejected}</span>
+            <span>Completed</span>
+            <span>{s.completed}</span>
           </div>
         </div>
       </CardContent>
@@ -534,23 +516,24 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     </Card>
   );
 
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Item
-        label="Total Project Value"
-        value={fmt.format(k.totalProjectValue)}
-      />
-      <Item
-        label="Total Change Order Value"
-        value={fmt.format(k.totalCOValue)}
-      />
-      <Item label="Change % of Project" value={`${k.changePercentage}%`} />
-      <Item
-        label="Total Approved Change Value"
-        value={fmt.format(k.totalApprovedValue)}
-      />
-    </div>
-  );
+return (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <Item
+      label="Total Project Value"
+      value={fmt.format(k.totalProjectValue)}
+    />
+    <Item
+      label="Total Change Order Value"
+      value={fmt.format(k.totalCOValue)}
+    />
+    <Item
+      label="Total Approved Change Value"
+      value={fmt.format(k.totalApprovedValue)}
+    />
+    <Item label="Change % of Project" value={`${k.changePercentage}%`} />
+  </div>
+);
+
 }
 
 // ==========================================
@@ -1092,7 +1075,6 @@ export default function ChangeOrdersDashboard({
         Change Management Dashboard
       </div>
 
-      <PackageChips selected={pkg} onSelect={setPkg} />
 
       <SummaryCard rows={view} />
 
@@ -1104,6 +1086,24 @@ export default function ChangeOrdersDashboard({
 
       <Card className="rounded-2xl overflow-hidden">
         <CardContent className="p-0">
+          <Card className="rounded-2xl overflow-hidden">
+  <CardContent className="p-0">
+    <div className="px-4 pt-4 pb-2 bg-white">
+      <PackageChips selected={pkg} onSelect={setPkg} />
+    </div>
+
+    <div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b">
+      <div className="col-span-1">Ref ID</div>
+      <div className="col-span-1">Package</div>
+      <div className="col-span-3">Title</div>
+      <div className="col-span-2">Stage</div>
+      <div className="col-span-1">PCR Target</div>
+      <div className="col-span-2">Sponsor</div>
+      <div className="col-span-1 text-right">Estimated</div>
+      <div className="col-span-1 text-right">Actual</div>
+    </div>
+    ...
+
 <div className="grid grid-cols-12 gap-4 px-6 py-5 text-sm font-semibold text-neutral-700 bg-white border-b sticky top-0 z-10">
   <div className="col-span-1">Ref ID</div>
   <div className="col-span-1">Package</div>
