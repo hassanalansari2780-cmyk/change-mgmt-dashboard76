@@ -60,10 +60,7 @@ export interface ChangeRecord {
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
-
-  // New fields
   prcTarget?: PcrTarget; // For PCRs: intended path (EI or CO)
-  sponsor?: string; // Change sponsor for that PCR / CO
 }
 
 // ==========================================
