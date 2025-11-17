@@ -513,6 +513,12 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   }, [rows]);
 
   // Detail handlers for the KPI cards
+  const handleTotalProjectDetails = () => {
+    alert(
+      "Total Project Value = the baseline contract value for the project. In this demo it is fixed at AED 500,000,000."
+    );
+  };
+
   const handleTotalChangeDetails = () => {
     alert(
       "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters."
@@ -539,25 +545,25 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   }: {
     label: string;
     value: string;
-    onDetails?: () => void;
+    onDetails: () => void;
   }) => (
     <Card className="rounded-2xl shadow-sm h-full">
-      <CardContent className="p-4 flex flex-col justify-between min-h-[140px]">
+      <CardContent className="p-4 flex flex-col justify-between min-h-[150px]">
         <div>
           <div className="text-sm text-muted-foreground">{label}</div>
-          <div className="text-2xl font-semibold mt-1">{value}</div>
+          <div className="mt-1 text-xl md:text-2xl font-semibold leading-tight">
+            {value}
+          </div>
         </div>
 
-        {onDetails && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="self-start mt-3 rounded-2xl px-3 py-1 text-xs"
-            onClick={onDetails}
-          >
-            Details
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start mt-3 rounded-2xl px-3 py-1 text-xs"
+          onClick={onDetails}
+        >
+          Details
+        </Button>
       </CardContent>
     </Card>
   );
@@ -567,7 +573,7 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
-        // no Details button for this one
+        onDetails={handleTotalProjectDetails}
       />
       <Item
         label="Total Change Order Value"
