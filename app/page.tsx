@@ -713,7 +713,6 @@ function formatPcrTargetLabel(t?: PcrTarget) {
 
 function Row({ r }: { r: ChangeRecord }) {
   const s = stageInfo(r.stageKey);
-  const vr = variance(r.estimated, r.actual);
   const days = daysBetween(r.stageStartDate);
   const pct = progressPct(r.stageKey);
   const [open, setOpen] = useState(false);
@@ -721,41 +720,23 @@ function Row({ r }: { r: ChangeRecord }) {
   const showReview = !!(r.reviewList && r.reviewList.length);
   const showSignatures = !!(r.signatureList && r.signatureList.length);
   const showClosedSummary = r.stageKey === FINAL_KEY;
-
-  const prcLabel =
-    r.type === "PRC" && r.target
-      ? r.target === "EI"
-        ? "PCR → EI"
-        : r.target === "CO"
-        ? "PCR → CO"
-        : null
-      : null;
+  const hasDocs = (r.links?.length ?? 0) > 0;
 
   return (
-    <div className="border-b last:border-b-0">
-      <div className="grid grid-cols-12 items-center px-3 py-3 hover:bg-muted/40">
-        {/* Ref ID + attachments */}
-        <div className="col-span-1">
+    <div className="border-b last:border-b-0 bg-white">
+      {/* ── TOP LINE: main summary ─────────────────────────── */}
+      <div className="grid grid-cols-12 items-center px-6 pt-3 pb-2">
+        {/* Ref ID */}
+        <div className="col-span-2">
           <div className="font-medium">{r.id}</div>
-          {r.links?.length ? (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {r.links.map((lnk, i) => (
-                <a
-                  key={i}
-                  href={lnk.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/70 mt-1"
-                  title={lnk.href}
-                >
-                  <Paperclip className="w-3.5 h-3.5 mr-1" /> {lnk.label}
-                </a>
-              ))}
+          {hasDocs && (
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              {r.links!.length} document{r.links!.length > 1 ? "s" : ""}
             </div>
-          ) : null}
+          )}
         </div>
 
-        {/* Package */}
+        {/* Package bubble */}
         <div className="col-span-1">
           <div className="w-8 h-8 rounded-full bg-muted grid place-items-center font-semibold">
             {r.package}
@@ -763,73 +744,95 @@ function Row({ r }: { r: ChangeRecord }) {
         </div>
 
         {/* Title */}
-        <div className="col-span-3 truncate">{r.title}</div>
+        <div className="col-span-3 truncate text-sm">{r.title}</div>
 
-{/* Stage + progress + SLA + Details */}
-<div className="col-span-2">
-  <div className="relative inline-flex items-center gap-2">
-    <div
-      className={clsx(
-        "px-2 py-1 rounded-2xl text-xs font-semibold",
-        s.color,
-      )}
-    >
-      {s.name}
-    </div>
-    {r.subStatus && (
-      <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
-        {r.subStatus}
-      </Badge>
-    )}
-  </div>
+        {/* Stage + sub-status */}
+        <div className="col-span-2">
+          <div className="inline-flex items-center gap-2">
+            <span
+              className={clsx(
+                "px-2 py-1 rounded-2xl text-xs font-semibold",
+                s.color,
+              )}
+            >
+              {s.name}
+            </span>
+            {r.subStatus && (
+              <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
+                {r.subStatus}
+              </Badge>
+            )}
+          </div>
+        </div>
 
-  <div className="mt-1">
-    <Progress value={pct} className="h-2" />
-
-    <div className="mt-1 text-[11px] text-muted-foreground">
-      Day {days} / SLA {s.slaDays}
-    </div>
-
-    <Button
-      size="sm"
-      variant="ghost"
-      className="mt-1 rounded-2xl h-7 px-3 text-[11px]"
-      onClick={() => setOpen((v) => !v)}
-    >
-      {open ? "Hide" : "Details"}
-    </Button>
-  </div>
-</div>
-
-        {/* PCR Target */}
+        {/* PCR Target pill (only for PCRs) */}
         <div className="col-span-1">
-          {prcLabel && (
-            <Badge className="rounded-2xl bg-amber-100 text-amber-900 border border-amber-200">
-              {prcLabel}
-            </Badge>
+          {r.type === "PRC" && r.target && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-medium">
+              PCR → {r.target}
+            </span>
           )}
         </div>
 
         {/* Sponsor */}
-        <div className="col-span-2">
-          {r.sponsor && (
-            <div className="text-xs text-muted-foreground">{r.sponsor}</div>
-          )}
+        <div className="col-span-2 truncate text-sm">
+          {r.sponsor ?? "—"}
         </div>
 
         {/* Estimated */}
-        <div className="col-span-1 text-right tabular-nums">
+        <div className="col-span-1 text-right tabular-nums text-sm">
           {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
         </div>
 
         {/* Actual */}
-        <div className="col-span-1 text-right tabular-nums">
+        <div className="col-span-1 text-right tabular-nums text-sm">
           {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
         </div>
       </div>
 
+      {/* ── SECOND LINE: docs + progress + details button ───── */}
+      <div className="px-6 pb-3">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/* Attachments */}
+          <div className="flex flex-wrap gap-2">
+            {r.links?.map((lnk, i) => (
+              <a
+                key={i}
+                href={lnk.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted hover:bg-muted/70"
+                title={lnk.href}
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[140px]">{lnk.label}</span>
+              </a>
+            ))}
+          </div>
+
+          {/* Progress bar + SLA */}
+          <div className="flex-1 max-w-md ml-auto mr-4">
+            <Progress value={pct} className="h-1.5" />
+            <div className="text-[11px] mt-1">
+              Day {days} / SLA {s.slaDays}
+            </div>
+          </div>
+
+          {/* Toggle button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="rounded-2xl whitespace-nowrap"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "Hide details" : "Details"}
+          </Button>
+        </div>
+      </div>
+
+      {/* ── EXPANDED DETAILS (unchanged logic) ─────────────── */}
       {open && (
-        <div className="px-3 pb-4 bg-muted/30">
+        <div className="px-6 pb-4 bg-muted/30">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* 1) Stage Progress */}
             <Card className="rounded-2xl md:order-1">
@@ -931,7 +934,7 @@ function Row({ r }: { r: ChangeRecord }) {
               </CardContent>
             </Card>
 
-            {/* 3) Signature List */}
+            {/* 3) Signature list */}
             <Card className="rounded-2xl md:order-3">
               <CardContent className="p-4">
                 <div className="text-sm font-semibold mb-2">
@@ -973,7 +976,7 @@ function Row({ r }: { r: ChangeRecord }) {
               </CardContent>
             </Card>
 
-            {/* 4) Final Summary if closed */}
+            {/* 4) Final summary if closed */}
             {showClosedSummary && (
               <Card className="rounded-2xl md:order-4">
                 <CardContent className="p-4">
@@ -997,9 +1000,7 @@ function Row({ r }: { r: ChangeRecord }) {
                       Variance:{" "}
                       {variance(r.estimated, r.actual) === null
                         ? "—"
-                        : `${
-                            variance(r.estimated, r.actual)! < 0 ? "-" : "+"
-                          }${fmt.format(
+                        : `${variance(r.estimated, r.actual)! < 0 ? "-" : "+"}${fmt.format(
                             Math.abs(variance(r.estimated, r.actual)!),
                           )}`}
                     </div>
@@ -1008,7 +1009,7 @@ function Row({ r }: { r: ChangeRecord }) {
               </Card>
             )}
 
-            {/* 5) Documents */}
+            {/* 5) Documents list (if any) */}
             {(r.links?.length ?? 0) > 0 && (
               <Card className="rounded-2xl md:order-5 md:col-span-3">
                 <CardContent className="p-4">
