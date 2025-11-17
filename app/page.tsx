@@ -235,8 +235,11 @@ const DEMO: ChangeRecord[] = [
     subStatus: "Under Review",
     stageStartDate: "2026-01-05",
     overallStartDate: "2026-01-05",
-    prcTarget: "EI", // PCR intended to lead to EI
+
+    // NEW
+    target: "EI", // this PCR is intended to lead to an EI
     sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
+
     reviewList: [
       {
         role: "PMEC (Engineer)",
@@ -264,67 +267,23 @@ const DEMO: ChangeRecord[] = [
     estimated: 650000,
     stageKey: "PRC",
     subStatus: "In Preparation",
-    stageStartDate: "2026-01-10",
-    overallStartDate: "2026-01-09",
-    prcTarget: "CO", // PCR intended to lead to CO
+    stageStartDate: "2026-01-12",
+    overallStartDate: "2026-01-12",
+
+    // NEW
+    target: "CO", // this PCR is intended to lead to a CO
     sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
+
     reviewList: [
       {
         role: "Contracts Engineer",
         name: "John Mathew",
-        decision: "Aligning scope with HSSE",
-      },
-    ],
-  },
-  {
-    id: "CO-B-014",
-    type: "CO",
-    package: "B",
-    title: "Signal Route Optimization",
-    estimated: 450000,
-    stageKey: "CC_OUTCOME",
-    subStatus: "Approved with Conditions",
-    stageStartDate: "2026-01-09",
-    overallStartDate: "2026-01-07",
-    sponsor: "Rail Systems Director",
-    reviewList: [
-      {
-        role: "PMEC",
-        name: "Mohammed Al-Busaidi",
-        decision: "Recommendation: Proceed",
-        date: "2026-01-09",
+        decision: "Draft prepared",
       },
       {
-        role: "CC (Chair)",
-        name: "Eng. Fatma Al-Siyabi",
-        decision: "Endorsed",
-        date: "2026-01-10",
-      },
-    ],
-  },
-  {
-    id: "CO-A-019",
-    type: "CO",
-    package: "A",
-    title: "Lighting Level Upgrade",
-    estimated: 300000,
-    stageKey: "CEO_OR_BOARD_MEMO",
-    subStatus: "In Approval",
-    stageStartDate: "2026-01-13",
-    overallStartDate: "2026-01-08",
-    sponsor: "Operations Director",
-    reviewList: [
-      {
-        role: "PM (Pkg Owner)",
-        name: "Eng. Nasser Al-Rawahi",
-        decision: "Recommended",
-        date: "2026-01-13",
-      },
-      {
-        role: "Finance Controller",
-        name: "Sara Al-Said",
-        decision: "Budget available",
-        date: "2026-01-13",
+        role: "Finance",
+        name: "Ahmed Al-Lawati",
+        decision: "Budget confirmed",
       },
     ],
     signatureList: [
