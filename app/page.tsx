@@ -569,9 +569,9 @@ function StageTimeline({
       : -1;
 
   return (
-    <div className="w-full overflow-x-auto py-2">
-      <div className="flex items-center gap-4 min-w-max px-1">
-        {STAGES.map((s, i) => {
+  <div className="w-full flex justify-center py-2">
+    <div className="flex items-center gap-4 overflow-x-auto px-1 max-w-full">
+      {STAGES.map((s, i) => {
           const isActive = active && active !== "All" && s.key === active;
           const isDone = activeIdx >= 0 && i <= activeIdx;
           const connDone = activeIdx >= 0 && i < activeIdx;
@@ -782,40 +782,41 @@ function Row({ r }: { r: ChangeRecord }) {
         {/* Title */}
         <div className="col-span-3 truncate">{r.title}</div>
 
-        {/* Stage + progress + SLA + Details */}
-        <div className="col-span-2">
-          <div className="relative inline-flex items-center gap-2">
-            <div
-              className={clsx(
-                "px-2 py-1 rounded-2xl text-xs font-semibold",
-                s.color,
-              )}
-            >
-              {s.name}
-            </div>
-            {r.subStatus && (
-              <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
-                {r.subStatus}
-              </Badge>
-            )}
-          </div>
-          <div className="mt-1">
-            <Progress value={pct} className="h-2" />
-            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
-              <span>
-                Day {days} / SLA {s.slaDays}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-2xl h-6 px-2 text-[11px]"
-                onClick={() => setOpen((v) => !v)}
-              >
-                {open ? "Hide" : "Details"}
-              </Button>
-            </div>
-          </div>
-        </div>
+{/* Stage + progress + SLA + Details */}
+<div className="col-span-2">
+  <div className="relative inline-flex items-center gap-2">
+    <div
+      className={clsx(
+        "px-2 py-1 rounded-2xl text-xs font-semibold",
+        s.color,
+      )}
+    >
+      {s.name}
+    </div>
+    {r.subStatus && (
+      <Badge className="rounded-2xl bg-neutral-100 text-neutral-900 border">
+        {r.subStatus}
+      </Badge>
+    )}
+  </div>
+
+  <div className="mt-1">
+    <Progress value={pct} className="h-2" />
+
+    <div className="mt-1 text-[11px] text-muted-foreground">
+      Day {days} / SLA {s.slaDays}
+    </div>
+
+    <Button
+      size="sm"
+      variant="ghost"
+      className="mt-1 rounded-2xl h-7 px-3 text-[11px]"
+      onClick={() => setOpen((v) => !v)}
+    >
+      {open ? "Hide" : "Details"}
+    </Button>
+  </div>
+</div>
 
         {/* PCR Target */}
         <div className="col-span-1">
