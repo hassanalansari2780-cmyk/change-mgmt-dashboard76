@@ -233,9 +233,7 @@ function issuedItemLabel(r: ChangeRecord): string {
 // ==========================================
 // Demo data (more examples for all 3 tables)
 // ==========================================
-// ==========================================
-// Demo data (more examples for all 3 tables)
-// ==========================================
+
 const DEMO: ChangeRecord[] = [
   // --- PCRs → EI ---
   {
@@ -962,6 +960,7 @@ function Row({
 }) {
   const s = stageInfo(r.stageKey);
   const days = daysBetween(r.stageStartDate);
+  const [open, setOpen] = useState(false);
 
   const hasDocs = (r.links?.length ?? 0) > 0;
 
@@ -1014,9 +1013,9 @@ function Row({
           </div>
         </div>
 
-        {/* Title (col 3–4) – allow multiple lines */}
+        {/* Title (col 3–4) – multi-line, forced wrap */}
         <div className="col-span-2">
-          <div className="text-sm leading-snug break-words">
+          <div className="text-sm leading-snug break-words max-w-xs">
             {r.title}
           </div>
         </div>
@@ -1041,6 +1040,20 @@ function Row({
           <div className="text-[11px] text-muted-foreground">
             Day {days} / SLA {s.slaDays}
           </div>
+
+          {/* Details button ONLY for PCR tables (1 & 2) */}
+          {mode === "pcr" && (
+            <div className="mt-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-2xl px-3 py-1 text-xs"
+                onClick={() => setOpen((v) => !v)}
+              >
+                {open ? "Hide details" : "Details"}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Middle column: hidden for tables 1 & 2, "Issued Item" for table 3 */}
@@ -1057,8 +1070,8 @@ function Row({
           )}
         </div>
 
-        {/* Sponsor (col 8–9) – allow multiple lines */}
-        <div className="col-span-2 text-sm leading-snug break-words">
+        {/* Sponsor (col 8–9) – multi-line, forced wrap */}
+        <div className="col-span-2 text-sm leading-snug break-words max-w-xs">
           {r.sponsor ?? "—"}
         </div>
 
@@ -1087,6 +1100,215 @@ function Row({
           </div>
         </div>
       </div>
+
+      {/* Expanded details – ONLY for PCR (tables 1 & 2) */}
+      {mode === "pcr" && open && (
+        <div className="px-6 pb-4 bg-muted/30">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 1) Stage progress breakdown */}
+            <Card className="rounded-2xl md:order-1">
+              <CardContent className="p-4">
+                <div className="text-sm font-semibold mb-2">
+                  Stage Progress —{" "}
+                  <span className={stageTextClass(s.color)}>{s.name}</span>
+                </div>
+                {(() => {
+                  const opts = STAGE_OPTIONS[r.stageKey];
+                  const currentIdx = Math.max(
+                    0,
+                    opts.findIndex((o) => o === (r.subStatus ?? "")),
+                  );
+                  return (
+                    <div className="space-y-4">
+                      {opts.map((opt, idx) => {
+                        const isCurrent = idx === currentIdx;
+                        const isCompleted = idx < currentIdx;
+                        const isFuture = idx > currentIdx;
+                        return (
+                          <div key={opt} className="flex items-start gap-3">
+                            <div
+                              className={clsx(
+                                "w-4 h-4 rounded-full border mt-1",
+                                isCurrent &&
+                                  "bg-emerald-600 border-emerald-600",
+                                isCompleted &&
+                                  !isCurrent &&
+                                  "bg-emerald-50 border-emerald-600",
+                                isFuture &&
+                                  "bg-white border-muted-foreground",
+                              )}
+                            />
+                            <div>
+                              <div
+                                className={clsx(
+                                  "text-sm",
+                                  isCurrent
+                                    ? "text-emerald-700 font-medium"
+                                    : isCompleted
+                                    ? "text-emerald-700"
+                                    : "text-foreground",
+                                )}
+                              >
+                                {opt}
+                              </div>
+                              {isCurrent && (
+                                <div className="text-xs text-emerald-700">
+                                  Current
+                                </div>
+                              )}
+                              {isCompleted && (
+                                <div className="text-xs text-emerald-700">
+                                  Completed
+                                </div>
+                              )}
+                              {isFuture && (
+                                <div className="text-xs text-muted-foreground">
+                                  Incomplete
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* 2) Review list */}
+            <Card className="rounded-2xl md:order-2">
+              <CardContent className="p-4">
+                <div className="text-sm font-semibold mb-2">Review List</div>
+                <div className="space-y-2 text-sm">
+                  {(showReview
+                    ? r.reviewList!
+                    : [{ role: "—", name: "No reviewers", decision: "" }]
+                  ).map((rv, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="font-medium">{rv.role}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {rv.name}
+                        </div>
+                      </div>
+                      <div className="text-xs text-right text-muted-foreground">
+                        <div>{rv.date ?? "—"}</div>
+                        <div>{rv.decision ?? ""}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 3) Signature list */}
+            <Card className="rounded-2xl md:order-3">
+              <CardContent className="p-4">
+                <div className="text-sm font-semibold mb-2">
+                  Signature List
+                </div>
+                <div className="space-y-2 text-sm">
+                  {(showSignatures
+                    ? r.signatureList!
+                    : [{ role: "—", name: "No signatures", signed: false }]
+                  ).map((sg, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="font-medium">{sg.role}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {sg.name}
+                        </div>
+                      </div>
+                      <div className="text-xs text-right">
+                        <span
+                          className={clsx(
+                            "px-2 py-1 rounded-full",
+                            sg.signed
+                              ? "bg-emerald-100 text-emerald-900"
+                              : "bg-amber-100 text-amber-900",
+                          )}
+                        >
+                          {sg.signed ? "Signed" : "Pending"}
+                        </span>
+                        <div className="text-muted-foreground">
+                          {sg.date ?? "—"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 4) Final summary for closed items (if you want it for PCRs too) */}
+            {showClosedSummary && (
+              <Card className="rounded-2xl md:order-4">
+                <CardContent className="p-4">
+                  <div className="text-sm font-semibold mb-2">
+                    Final Summary
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div>
+                      Estimated:{" "}
+                      {typeof r.estimated === "number"
+                        ? fmt.format(r.estimated)
+                        : "—"}
+                    </div>
+                    <div>
+                      Actual:{" "}
+                      {typeof r.actual === "number"
+                        ? fmt.format(r.actual)
+                        : "—"}
+                    </div>
+                    <div>
+                      Variance:{" "}
+                      {varianceValue === null
+                        ? "—"
+                        : `${varianceValue > 0 ? "+" : ""}${fmt.format(
+                            varianceValue,
+                          )}`}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 5) Documents list */}
+            {(r.links?.length ?? 0) > 0 && (
+              <Card className="rounded-2xl md:order-5 md:col-span-3">
+                <CardContent className="p-4">
+                  <div className="text-sm font-semibold mb-2">Documents</div>
+                  <div className="space-y-2 text-sm">
+                    {r.links!.map((lnk, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="truncate">{lnk.label}</div>
+                        <a
+                          href={lnk.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-secondary hover:bg-secondary/80"
+                        >
+                          Open <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
