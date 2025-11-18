@@ -220,6 +220,14 @@ function stageTextClass(color: string) {
   const text = parts.find((p) => p.startsWith("text-"));
   return text || "text-gray-900";
 }
+function issuedItemLabel(r: ChangeRecord) {
+  // What is the final issued item?
+  if (r.type === "EI") return "EI";
+  if (r.stageKey === "AA_SA") return "AA / SA";
+  if (r.stageKey === "CO_V_VOS") return "CO / V / VOS";
+  // Fallback
+  return r.type;
+}
 
 function issuedItemLabel(r: ChangeRecord): string {
   if (r.stageKey === "EI" || r.type === "EI") return "EI";
@@ -775,13 +783,9 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
 // ==========================================
 function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   const TOTAL_PROJECT_VALUE = 500_000_000; // demo: AED 500M
+  const LIMIT_PERCENT = 10; // max 10% threshold
 
   const k = useMemo(() => {
-    const totalCOValue = rows.reduce(
-      (sum, r) => sum + (r.estimated ?? 0),
-      0,
-    );
-
     const approvedRows = rows.filter(
       (r) => r.outcome === "Approved" && typeof r.actual === "number",
     );
@@ -791,40 +795,44 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
       0,
     );
 
-    const changePercentage = TOTAL_PROJECT_VALUE
-      ? ((totalCOValue / TOTAL_PROJECT_VALUE) * 100).toFixed(2)
-      : "0.00";
+    const changeRatio = TOTAL_PROJECT_VALUE
+      ? totalApprovedValue / TOTAL_PROJECT_VALUE
+      : 0;
+
+    const changePercent = changeRatio * 100;
+    const changePercentDisplay = changePercent.toFixed(2);
+
+    const limitValue = TOTAL_PROJECT_VALUE * (LIMIT_PERCENT / 100);
+
+    const approvedVsLimitPct = limitValue
+      ? Math.min(100, Math.max(0, (totalApprovedValue / limitValue) * 100))
+      : 0;
+
+    const percentVsLimitPct = LIMIT_PERCENT
+      ? Math.min(100, Math.max(0, (changePercent / LIMIT_PERCENT) * 100))
+      : 0;
 
     return {
       totalProjectValue: TOTAL_PROJECT_VALUE,
-      totalCOValue,
       totalApprovedValue,
-      changePercentage,
+      changePercentDisplay,
+      limitValue,
+      approvedVsLimitPct,
+      percentVsLimitPct,
     };
   }, [rows]);
 
-  // --- Details pop-ups ---
+  // --- Details only for Total Project Value ---
   const handleTotalProjectDetails = () => {
     alert(
-      "Total Project Value = the baseline Contract Price for the project (configured as a static figure in the dashboard).",
-    );
-  };
-
-  const handleTotalChangeDetails = () => {
-    alert(
-      "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters.",
-    );
-  };
-
-  const handleApprovedChangeDetails = () => {
-    alert(
-      "Total Approved Change Value = sum of the ACTUAL values for all changes with outcome = Approved and an Actual value.",
-    );
-  };
-
-  const handleChangePercentDetails = () => {
-    alert(
-      "Change % of Project = Total Change Order Value ÷ Total Project Value × 100 (based on the visible items).",
+      [
+        "Total Project Value represents the full contract value across all packages.",
+        "",
+        "In the real dashboard, this Details view would show:",
+        "• Project value per package (A, B, C…)",
+        "• Split between Omani and UAE portions (if applicable)",
+        "• Any excluded provisional sums.",
+      ].join("\n"),
     );
   };
 
@@ -832,15 +840,22 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   const Item = ({
     label,
     value,
+    subtitle,
+    showBar,
+    barValue,
+    barCaption,
     onDetails,
   }: {
     label: string;
     value: string;
+    subtitle?: string;
+    showBar?: boolean;
+    barValue?: number;
+    barCaption?: string;
     onDetails?: () => void;
   }) => (
     <Card className="rounded-2xl shadow-sm h-[180px]">
       <CardContent className="p-4 h-full flex flex-col justify-between">
-        {/* Title + Value */}
         <div className="flex flex-col space-y-1">
           <div className="text-sm text-muted-foreground leading-none">
             {label}
@@ -849,9 +864,25 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
           <div className="text-xl font-semibold leading-tight whitespace-nowrap">
             {value}
           </div>
+
+          {subtitle && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {subtitle}
+            </div>
+          )}
+
+          {showBar && typeof barValue === "number" && (
+            <div className="mt-2">
+              <Progress value={barValue} className="h-2 rounded-full" />
+              {barCaption && (
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {barCaption}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Details Button */}
         {onDetails && (
           <Button
             variant="ghost"
@@ -867,26 +898,36 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
+      {/* 1) Total Project Value — with Details */}
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
         onDetails={handleTotalProjectDetails}
       />
-      <Item
-        label="Total Change Order Value"
-        value={fmt.format(k.totalCOValue)}
-        onDetails={handleTotalChangeDetails}
-      />
+
+      {/* 2) Total Approved Change Value — vs 10% limit */}
       <Item
         label="Total Approved Change Value"
         value={fmt.format(k.totalApprovedValue)}
-        onDetails={handleApprovedChangeDetails}
+        subtitle={`of ${fmt.format(k.limitValue)} limit (${LIMIT_PERCENT}% of project)`}
+        showBar
+        barValue={k.approvedVsLimitPct}
+        barCaption={`${k.approvedVsLimitPct.toFixed(
+          0,
+        )}% of allowed envelope used`}
       />
+
+      {/* 3) Change % of Project — vs 10% limit */}
       <Item
         label="Change % of Project"
-        value={`${k.changePercentage}%`}
-        onDetails={handleChangePercentDetails}
+        value={`${k.changePercentDisplay}%`}
+        subtitle={`of ${LIMIT_PERCENT}% limit`}
+        showBar
+        barValue={k.percentVsLimitPct}
+        barCaption={`${k.percentVsLimitPct.toFixed(
+          0,
+        )}% of percentage limit used`}
       />
     </div>
   );
@@ -1014,6 +1055,20 @@ function ChangeTableHeader({
         {showMiddleColumn ? middleLabel : null}
       </div>
 
+      <div className="col-span-2">Sponsor</div>
+      <div className="col-span-1 text-right">Estimated</div>
+      <div className="col-span-1 text-right">Actual</div>
+      <div className="col-span-1 text-right">Variance</div>
+    </div>
+  );
+}
+function CompletedTableHeader() {
+  return (
+    <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-semibold text-neutral-500 bg-white border-y">
+      <div className="col-span-1">Ref ID</div>
+      <div className="col-span-1">Package</div>
+      <div className="col-span-3">Title</div>
+      <div className="col-span-2">Issued Item</div>
       <div className="col-span-2">Sponsor</div>
       <div className="col-span-1 text-right">Estimated</div>
       <div className="col-span-1 text-right">Actual</div>
@@ -1488,6 +1543,88 @@ function Row({
     </div>
   );
 }
+function CompletedRow({ r }: { r: ChangeRecord }) {
+  const varianceValue =
+    typeof r.estimated === "number" && typeof r.actual === "number"
+      ? r.actual - r.estimated
+      : null;
+
+  return (
+    <div className="border-b last:border-b-0 bg-white">
+      <div className="grid grid-cols-12 gap-4 px-6 py-3 items-start">
+        {/* Ref ID */}
+        <div className="col-span-1">
+          <div className="text-sm font-medium">{r.id}</div>
+          {(r.links?.length ?? 0) > 0 && (
+            <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
+              {r.links!.map((lnk, i) => (
+                <a
+                  key={i}
+                  href={lnk.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  <span className="truncate">{lnk.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Package */}
+        <div className="col-span-1">
+          <div className="w-8 h-8 rounded-full bg-muted grid place-items-center text-sm font-semibold">
+            {r.package}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="col-span-3">
+          <div className="text-sm leading-snug break-words">{r.title}</div>
+        </div>
+
+        {/* Issued Item */}
+        <div className="col-span-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium">
+            {issuedItemLabel(r)}
+          </span>
+        </div>
+
+        {/* Sponsor */}
+        <div className="col-span-2 text-sm leading-snug break-words">
+          {r.sponsor ?? "—"}
+        </div>
+
+        {/* Estimated */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {typeof r.estimated === "number" ? fmt.format(r.estimated) : "—"}
+          </div>
+        </div>
+
+        {/* Actual */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {typeof r.actual === "number" ? fmt.format(r.actual) : "—"}
+          </div>
+        </div>
+
+        {/* Variance */}
+        <div className="col-span-1 text-right">
+          <div className="text-sm tabular-nums">
+            {varianceValue === null
+              ? "—"
+              : `${varianceValue > 0 ? "+" : varianceValue < 0 ? "-" : ""}${fmt.format(
+                  Math.abs(varianceValue),
+                )}`}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ==========================================
 // Main Component
@@ -1576,26 +1713,27 @@ export default function ChangeOrdersDashboard({
           {/* PCR → EI section (Table 1) */}
 <Card className="rounded-2xl border shadow-sm mb-6">
   <CardContent className="p-0">
-
     <section>
       <PathTimeline
-        label="PCRs → EI"
-        stages={["PRC", "CC Outcome", "CEO / Board Memo", "EI"]}
+        label="Completed (EI / CO / V / VOS or AA / SA Issued)"
+        stages={[
+          "PRC",
+          "CC Outcome",
+          "CEO / Board Memo",
+          "Issued Item (EI / CO / V / VOS / AA / SA)",
+        ]}
       />
 
-      <ChangeTableHeader />
+      <CompletedTableHeader />
 
-      {pcrToEiRows.length > 0 ? (
-        pcrToEiRows.map((r) => (
-          <Row key={r.id} r={r} mode="pcr" showMiddleColumn={false} />
-        ))
+      {completedRows.length > 0 ? (
+        completedRows.map((r) => <CompletedRow key={r.id} r={r} />)
       ) : (
         <div className="px-4 py-4 text-xs text-neutral-500">
-          No PCRs currently tagged as PCR → EI after filters.
+          No completed changes under the current filters.
         </div>
       )}
     </section>
-
   </CardContent>
 </Card>
 
