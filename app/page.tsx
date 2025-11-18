@@ -221,10 +221,20 @@ function stageTextClass(color: string) {
   return text || "text-gray-900";
 }
 
+function issuedItemLabel(r: ChangeRecord): string {
+  if (r.stageKey === "EI" || r.type === "EI") return "EI";
+  if (r.stageKey === "CO_V_VOS") return "CO / V / VOS";
+  if (r.stageKey === "AA_SA") return "AA / SA";
+  if (r.type === "Determination") return "Determination";
+  if (r.type === "CO") return "CO";
+  return r.type;
+}
+
 // ==========================================
-// Demo data
+// Demo data (more examples for all 3 tables)
 // ==========================================
 const DEMO: ChangeRecord[] = [
+  // --- PCRs → EI ---
   {
     id: "PCR-A-013",
     type: "PRC",
@@ -235,10 +245,8 @@ const DEMO: ChangeRecord[] = [
     subStatus: "Under Review",
     stageStartDate: "2026-01-05",
     overallStartDate: "2026-01-05",
-
     target: "EI",
     sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
-
     reviewList: [
       {
         role: "PMEC (Engineer)",
@@ -259,6 +267,35 @@ const DEMO: ChangeRecord[] = [
     ],
   },
   {
+    id: "PCR-C-021",
+    type: "PRC",
+    package: "C",
+    title: "Drainage Rerouting at Station C-05 (PCR)",
+    estimated: 1200000,
+    stageKey: "PRC",
+    subStatus: "Ready for CC",
+    stageStartDate: "2026-01-18",
+    overallStartDate: "2026-01-10",
+    target: "EI",
+    sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
+    reviewList: [
+      {
+        role: "Contracts Specialist",
+        name: "Hassan Al-Ansari",
+        decision: "Draft reviewed",
+        date: "2026-01-17",
+      },
+      {
+        role: "Finance",
+        name: "Sara Al-Said",
+        decision: "Budget checked",
+        date: "2026-01-17",
+      },
+    ],
+  },
+
+  // --- PCRs → CO / V / VOS / AA-SA ---
+  {
     id: "PCR-A-018",
     type: "PRC",
     package: "A",
@@ -268,10 +305,8 @@ const DEMO: ChangeRecord[] = [
     subStatus: "In Preparation",
     stageStartDate: "2026-01-12",
     overallStartDate: "2026-01-12",
-
     target: "CO",
     sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
-
     reviewList: [
       {
         role: "Contracts Engineer",
@@ -307,6 +342,29 @@ const DEMO: ChangeRecord[] = [
     ],
   },
   {
+    id: "PCR-B-009",
+    type: "PRC",
+    package: "B",
+    title: "Additional Cross Drain at Km 14+200 (PCR)",
+    estimated: 950000,
+    stageKey: "PRC",
+    subStatus: "Presented at CC",
+    stageStartDate: "2026-01-20",
+    overallStartDate: "2026-01-15",
+    target: "CO",
+    sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "Support in principle",
+        date: "2026-01-18",
+      },
+    ],
+  },
+
+  // --- EI in progress / issued (will show in last table once issued) ---
+  {
     id: "EI-A-004",
     type: "EI",
     package: "A",
@@ -330,6 +388,28 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
+  {
+    id: "EI-B-007",
+    type: "EI",
+    package: "B",
+    title: "Signal Relocation near Sohar Link (EI)",
+    estimated: 0,
+    stageKey: "EI",
+    subStatus: "Issued",
+    stageStartDate: "2025-08-10",
+    overallStartDate: "2025-07-25",
+    sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "EI issued to Contractor",
+        date: "2025-08-10",
+      },
+    ],
+  },
+
+  // --- Completed CO / V / VOS / AA-SA ---
   {
     id: "CO-G-032",
     type: "CO",
@@ -368,6 +448,36 @@ const DEMO: ChangeRecord[] = [
         role: "Contractor",
         name: "Supplier",
         date: "2025-07-21",
+        signed: true,
+      },
+    ],
+  },
+  {
+    id: "CO-D-014",
+    type: "CO",
+    package: "D",
+    title: "Platform Canopy Extension (Final)",
+    estimated: 500000,
+    actual: 520000,
+    outcome: "Approved",
+    stageKey: "CO_V_VOS",
+    subStatus: "Done",
+    stageStartDate: "2025-06-10",
+    overallStartDate: "2025-05-20",
+    sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        date: "2025-06-05",
+        decision: "Approved with conditions",
+      },
+    ],
+    signatureList: [
+      {
+        role: "CEO",
+        name: "Ahmed Al-Habsi",
+        date: "2025-06-08",
         signed: true,
       },
     ],
@@ -440,12 +550,17 @@ function computeSummary(rows: ChangeRecord[]) {
   const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
   const pcrToCO = pcrs.filter((r) => r.target === "CO").length;
 
-  // Completed = CO/V/VOS (Done) OR AA/SA (Done)
-  const completed = rows.filter(
-    (r) =>
+  // Completed = EI (Issued / To be Issued) OR CO/V/VOS (Done) OR AA/SA (Done)
+  const completed = rows.filter((r) => {
+    const isEICompleted =
+      r.stageKey === "EI" &&
+      (r.subStatus === "Issued" ||
+        r.subStatus === "To be Issued to Contractor");
+    const isCOOrAACompleted =
       (r.stageKey === "CO_V_VOS" && r.subStatus === "Done") ||
-      (r.stageKey === "AA_SA" && r.subStatus === "Done"),
-  ).length;
+      (r.stageKey === "AA_SA" && r.subStatus === "Done");
+    return isEICompleted || isCOOrAACompleted;
+  }).length;
 
   return { total, pcrToEI, pcrToCO, completed };
 }
@@ -470,7 +585,7 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
             <span>{s.pcrToCO}</span>
           </div>
           <div className="flex justify-between">
-            <span>Completed (CO/V/VOS or AA/SA)</span>
+            <span>Completed (EI / CO/V/VOS / AA/SA)</span>
             <span>{s.completed}</span>
           </div>
         </div>
@@ -512,69 +627,75 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     };
   }, [rows]);
 
-  // --- Details pop-ups (simple for now) ---
+  // --- Details pop-ups ---
+  const handleTotalProjectDetails = () => {
+    alert(
+      "Total Project Value = the baseline Contract Price for the project (configured as a static figure in the dashboard).",
+    );
+  };
+
   const handleTotalChangeDetails = () => {
     alert(
-      "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters."
+      "Total Change Order Value = sum of the ESTIMATED values for all changes currently visible after filters.",
     );
   };
 
   const handleApprovedChangeDetails = () => {
     alert(
-      "Total Approved Change Value = sum of the ACTUAL values for all changes with outcome = Approved and an Actual value."
+      "Total Approved Change Value = sum of the ACTUAL values for all changes with outcome = Approved and an Actual value.",
     );
   };
 
   const handleChangePercentDetails = () => {
     alert(
-      "Change % of Project = Total Change Order Value ÷ Total Project Value × 100 (based on the visible items)."
+      "Change % of Project = Total Change Order Value ÷ Total Project Value × 100 (based on the visible items).",
     );
   };
 
   // --- Single KPI card ---
-const Item = ({
-  label,
-  value,
-  onDetails,
-}: {
-  label: string;
-  value: string;
-  onDetails?: () => void;
-}) => (
-  <Card className="rounded-2xl shadow-sm h-[180px]">
-    <CardContent className="p-4 h-full flex flex-col justify-between">
-      
-      {/* Title + Value */}
-      <div className="flex flex-col space-y-1">
-        <div className="text-sm text-muted-foreground leading-none">
-          {label}
+  const Item = ({
+    label,
+    value,
+    onDetails,
+  }: {
+    label: string;
+    value: string;
+    onDetails?: () => void;
+  }) => (
+    <Card className="rounded-2xl shadow-sm h-[180px]">
+      <CardContent className="p-4 h-full flex flex-col justify-between">
+        {/* Title + Value */}
+        <div className="flex flex-col space-y-1">
+          <div className="text-sm text-muted-foreground leading-none">
+            {label}
+          </div>
+
+          <div className="text-xl font-semibold leading-tight whitespace-nowrap">
+            {value}
+          </div>
         </div>
 
-        <div className="text-xl font-semibold leading-tight whitespace-nowrap">
-          {value}
-        </div>
-      </div>
-
-      {/* Details Button */}
-      {onDetails && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="rounded-2xl px-3 py-1 text-xs self-start"
-          onClick={onDetails}
-        >
-          Details
-        </Button>
-      )}
-    </CardContent>
-  </Card>
-);
+        {/* Details Button */}
+        {onDetails && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-2xl px-3 py-1 text-xs self-start"
+            onClick={onDetails}
+          >
+            Details
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
+        onDetails={handleTotalProjectDetails}
       />
       <Item
         label="Total Change Order Value"
@@ -596,8 +717,7 @@ const Item = ({
 }
 
 // ==========================================
-// Stage timeline filter component (now unused UI-wise,
-// but kept in case you want to reuse it later)
+// Stage timeline filter component (kept for reuse)
 // ==========================================
 function StageTimeline({
   active,
@@ -692,16 +812,29 @@ function PathTimeline({ label, stages }: PathTimelineProps) {
 }
 
 // ==========================================
-// Common table header
+// Common table header (with optional middle column)
 // ==========================================
-function ChangeTableHeader() {
+function ChangeTableHeader({
+  showMiddleColumn,
+  middleLabel,
+}: {
+  showMiddleColumn: boolean;
+  middleLabel?: string;
+}) {
   return (
     <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-semibold text-neutral-500 bg-white border-y">
       <div className="col-span-1">Ref ID</div>
       <div className="col-span-1">Package</div>
       <div className="col-span-2">Title</div>
       <div className="col-span-2">Stage</div>
-      <div className="col-span-1">PCR Target</div>
+      <div
+        className={clsx(
+          "col-span-1",
+          !showMiddleColumn && "hidden",
+        )}
+      >
+        {middleLabel ?? ""}
+      </div>
       <div className="col-span-2">Sponsor</div>
       <div className="col-span-1 text-right">Estimated</div>
       <div className="col-span-1 text-right">Actual</div>
@@ -811,16 +944,17 @@ function Filters({
 // ==========================================
 // Row + details
 // ==========================================
-function formatPcrTargetLabel(t?: PcrTarget) {
-  if (!t) return "";
-  if (t === "EI") return "PCR → EI";
-  if (t === "CO") return "PCR → CO";
-  if (t === "EI+CO") return "PCR → EI + CO";
-  if (t === "TBD") return "PCR Target TBD";
-  return t;
-}
+type RowMode = "pcr" | "completed";
 
-function Row({ r }: { r: ChangeRecord }) {
+function Row({
+  r,
+  showMiddleColumn,
+  mode,
+}: {
+  r: ChangeRecord;
+  showMiddleColumn: boolean;
+  mode: RowMode;
+}) {
   const s = stageInfo(r.stageKey);
   const days = daysBetween(r.stageStartDate);
   const pct = progressPct(r.stageKey);
@@ -835,9 +969,16 @@ function Row({ r }: { r: ChangeRecord }) {
 
   const showReview = !!(r.reviewList && r.reviewList.length);
   const showSignatures = !!(r.signatureList && r.signatureList.length);
-  const showClosedSummary =
+
+  const isEICompleted =
+    r.stageKey === "EI" &&
+    (r.subStatus === "Issued" ||
+      r.subStatus === "To be Issued to Contractor");
+  const isCOOrAACompleted =
     (r.stageKey === "AA_SA" || r.stageKey === "CO_V_VOS") &&
     r.subStatus === "Done";
+
+  const showClosedSummary = isEICompleted || isCOOrAACompleted;
   const isClosed = showClosedSummary;
 
   return (
@@ -908,16 +1049,16 @@ function Row({ r }: { r: ChangeRecord }) {
           </div>
         </div>
 
-        {/* PCR Target (col 7) */}
-        <div className="col-span-1">
-          {r.type === "PRC" && r.target && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-medium">
-              PCR → {r.target}
-              {isClosed && (
-                <span className="ml-2 text-[10px] uppercase tracking-wide">
-                  Closed
-                </span>
-              )}
+        {/* Middle column: hidden for tables 1 & 2, "Issued Item" for table 3 */}
+        <div
+          className={clsx(
+            "col-span-1",
+            !showMiddleColumn && "hidden",
+          )}
+        >
+          {showMiddleColumn && mode === "completed" && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium">
+              {issuedItemLabel(r)}
             </span>
           )}
         </div>
@@ -1207,14 +1348,19 @@ export default function ChangeOrdersDashboard({
     [pcrRows],
   );
 
-  // Completed items (CO/V/VOS or AA/SA issued)
+  // Completed items: EI issued + CO/V/VOS or AA/SA issued/done
   const completedRows = useMemo(
     () =>
-      view.filter(
-        (r) =>
+      view.filter((r) => {
+        const isEICompleted =
+          r.stageKey === "EI" &&
+          (r.subStatus === "Issued" ||
+            r.subStatus === "To be Issued to Contractor");
+        const isCOOrAACompleted =
           (r.stageKey === "CO_V_VOS" && r.subStatus === "Done") ||
-          (r.stageKey === "AA_SA" && r.subStatus === "Done"),
-      ),
+          (r.stageKey === "AA_SA" && r.subStatus === "Done");
+        return isEICompleted || isCOOrAACompleted;
+      }),
     [view],
   );
 
@@ -1233,8 +1379,6 @@ export default function ChangeOrdersDashboard({
         </div>
       </div>
 
-      {/* (Timeline filter row removed as requested) */}
-
       {/* Search + export */}
       <Filters q={q} setQ={setQ} onExport={() => exportCSV(view)} />
 
@@ -1246,15 +1390,22 @@ export default function ChangeOrdersDashboard({
             <PackageChips selected={pkg} onSelect={setPkg} />
           </div>
 
-          {/* PCR → EI section */}
+          {/* PCR → EI section (Table 1) */}
           <section>
             <PathTimeline
-              label="PCRs intended to lead to EI"
+              label="PCRs → EI"
               stages={["PRC", "CC Outcome", "CEO / Board Memo", "EI"]}
             />
-            <ChangeTableHeader />
+            <ChangeTableHeader showMiddleColumn={false} />
             {pcrToEiRows.length > 0 ? (
-              pcrToEiRows.map((r) => <Row key={r.id} r={r} />)
+              pcrToEiRows.map((r) => (
+                <Row
+                  key={r.id}
+                  r={r}
+                  showMiddleColumn={false}
+                  mode="pcr"
+                />
+              ))
             ) : (
               <div className="px-4 py-4 text-xs text-neutral-500">
                 No PCRs currently tagged as PCR → EI after filters.
@@ -1262,10 +1413,10 @@ export default function ChangeOrdersDashboard({
             )}
           </section>
 
-          {/* PCR → CO / V / VOS section */}
+          {/* PCR → CO / V / VOS / AA-SA section (Table 2) */}
           <section className="mt-6">
             <PathTimeline
-              label="PCRs intended to lead to CO / V / VOS / AA-SA"
+              label="PCRs → CO / V / VOS / AA-SA"
               stages={[
                 "PRC",
                 "CC Outcome",
@@ -1273,9 +1424,16 @@ export default function ChangeOrdersDashboard({
                 "CO / V / VOS or AA / SA",
               ]}
             />
-            <ChangeTableHeader />
+            <ChangeTableHeader showMiddleColumn={false} />
             {pcrToCoRows.length > 0 ? (
-              pcrToCoRows.map((r) => <Row key={r.id} r={r} />)
+              pcrToCoRows.map((r) => (
+                <Row
+                  key={r.id}
+                  r={r}
+                  showMiddleColumn={false}
+                  mode="pcr"
+                />
+              ))
             ) : (
               <div className="px-4 py-4 text-xs text-neutral-500">
                 No PCRs currently tagged as PCR → CO / V / VOS after filters.
@@ -1283,24 +1441,34 @@ export default function ChangeOrdersDashboard({
             )}
           </section>
 
-          {/* Completed items section */}
+          {/* Completed items section (Table 3) */}
           <section className="mt-6 mb-2">
             <PathTimeline
-              label="Completed (CO / V / VOS or AA / SA Issued)"
+              label="Completed (EI / CO / V / VOS or AA / SA Issued)"
               stages={[
                 "PRC",
                 "CC Outcome",
                 "CEO / Board Memo",
-                "CO / V / VOS or AA / SA (Issued)",
+                "Issued Item (EI / CO / V / VOS / AA / SA)",
               ]}
             />
-            <ChangeTableHeader />
+            <ChangeTableHeader
+              showMiddleColumn={true}
+              middleLabel="Issued Item"
+            />
             {completedRows.length > 0 ? (
-              completedRows.map((r) => <Row key={r.id} r={r} />)
+              completedRows.map((r) => (
+                <Row
+                  key={r.id}
+                  r={r}
+                  showMiddleColumn={true}
+                  mode="completed"
+                />
+              ))
             ) : (
               <div className="px-4 py-4 text-xs text-neutral-500">
-                No completed changes (CO/V/VOS or AA/SA Issued) under current
-                filters.
+                No completed changes (EI / CO / V / VOS or AA / SA Issued)
+                under current filters.
               </div>
             )}
           </section>
@@ -1323,10 +1491,11 @@ export default function ChangeOrdersDashboard({
 
       {/* Footer note */}
       <div className="text-xs text-muted-foreground">
-        Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI → CO/V/VOS
-        → AA/SA. SLA &amp; progress are derived directly from the stage and
-        dates. PCRs intended to lead to EI or CO are tagged, and sponsors are
-        visible under each reference.
+        Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI →
+        CO/V/VOS → AA/SA. SLA &amp; progress are derived directly from the
+        stage and dates. PCRs are grouped by their path (PCRs → EI and PCRs → CO
+        / V / VOS / AA-SA), while the last table shows completed issued items
+        (EI / CO / V / VOS / AA / SA).
       </div>
     </div>
   );
