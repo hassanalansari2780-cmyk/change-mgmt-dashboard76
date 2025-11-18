@@ -221,20 +221,10 @@ function stageTextClass(color: string) {
   return text || "text-gray-900";
 }
 function issuedItemLabel(r: ChangeRecord) {
-  // What is the final issued item?
-  if (r.type === "EI") return "EI";
-  if (r.stageKey === "AA_SA") return "AA / SA";
-  if (r.stageKey === "CO_V_VOS") return "CO / V / VOS";
-  // Fallback
-  return r.type;
-}
-
-function issuedItemLabel(r: ChangeRecord): string {
+  // Final issued item shown in Table 3
   if (r.stageKey === "EI" || r.type === "EI") return "EI";
   if (r.stageKey === "CO_V_VOS") return "CO / V / VOS";
   if (r.stageKey === "AA_SA") return "AA / SA";
-  if (r.type === "Determination") return "Determination";
-  if (r.type === "CO") return "CO";
   return r.type;
 }
 
