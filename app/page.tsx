@@ -818,10 +818,10 @@ function PathTimeline({ label, stages }: PathTimelineProps) {
 // Common table header (with optional middle column)
 // ==========================================
 function ChangeTableHeader({
-  showMiddleColumn,
-  middleLabel,
+  showMiddleColumn = false,
+  middleLabel = "Issued Item",
 }: {
-  showMiddleColumn: boolean;
+  showMiddleColumn?: boolean;
   middleLabel?: string;
 }) {
   return (
@@ -830,14 +830,17 @@ function ChangeTableHeader({
       <div className="col-span-1">Package</div>
       <div className="col-span-2">Title</div>
       <div className="col-span-2">Stage</div>
+
+      {/* Optional middle column (for Issued Item in table 3) */}
       <div
         className={clsx(
           "col-span-1",
           !showMiddleColumn && "hidden",
         )}
       >
-        {middleLabel ?? ""}
+        {showMiddleColumn ? middleLabel : null}
       </div>
+
       <div className="col-span-2">Sponsor</div>
       <div className="col-span-1 text-right">Estimated</div>
       <div className="col-span-1 text-right">Actual</div>
