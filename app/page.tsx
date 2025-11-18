@@ -233,6 +233,9 @@ function issuedItemLabel(r: ChangeRecord): string {
 // ==========================================
 // Demo data (more examples for all 3 tables)
 // ==========================================
+// ==========================================
+// Demo data (more examples for all 3 tables)
+// ==========================================
 const DEMO: ChangeRecord[] = [
   // --- PCRs → EI ---
   {
@@ -296,39 +299,76 @@ const DEMO: ChangeRecord[] = [
 
   // --- PCRs → CO / V / VOS / AA-SA ---
   {
-// --- PCRs → CO / V / VOS / AA-SA ---
-{
-  id: "PCR-A-018",
-  type: "PRC",
-  package: "A",
-  title: "Handrail Height Adjustment (PCR)",
-  estimated: 650000,
-  actual: 700000,                     // <--- add this
-  stageKey: "PRC",
-  subStatus: "In Preparation",
-  stageStartDate: "2026-01-12",
-  overallStartDate: "2026-01-12",
-  target: "CO",
-  sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
-  ...
-},
-{
-  id: "PCR-B-009",
-  type: "PRC",
-  package: "B",
-  title: "Additional Cross Drain at Km 14+200 (PCR)",
-  estimated: 950000,
-  actual: 900000,                     // <--- add this
-  stageKey: "PRC",
-  subStatus: "Presented at CC",
-  stageStartDate: "2026-01-20",
-  overallStartDate: "2026-01-15",
-  target: "CO",
-  sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
-  ...
-},
+    id: "PCR-A-018",
+    type: "PRC",
+    package: "A",
+    title: "Handrail Height Adjustment (PCR)",
+    estimated: 650000,
+    actual: 700000, // example – change to your real value
+    stageKey: "PRC",
+    subStatus: "In Preparation",
+    stageStartDate: "2026-01-12",
+    overallStartDate: "2026-01-12",
+    target: "CO",
+    sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
+    reviewList: [
+      {
+        role: "Contracts Engineer",
+        name: "John Mathew",
+        decision: "Draft prepared",
+      },
+      {
+        role: "Finance",
+        name: "Ahmed Al-Lawati",
+        decision: "Budget confirmed",
+      },
+    ],
+    signatureList: [
+      {
+        role: "PM (Pkg Owner)",
+        name: "Eng. Nasser Al-Rawahi",
+        signed: true,
+        date: "2026-01-13",
+      },
+      {
+        role: "Finance Controller",
+        name: "Sara Al-Said",
+        signed: true,
+        date: "2026-01-13",
+      },
+      { role: "CEO", name: "Ahmed Al-Habsi", signed: false },
+    ],
+    links: [
+      {
+        label: "CEO/Board Memo (PDF)",
+        href: "https://example.com/memos/CO-A-019.pdf",
+      },
+    ],
+  },
+  {
+    id: "PCR-B-009",
+    type: "PRC",
+    package: "B",
+    title: "Additional Cross Drain at Km 14+200 (PCR)",
+    estimated: 950000,
+    actual: 900000, // example – change as needed
+    stageKey: "PRC",
+    subStatus: "Presented at CC",
+    stageStartDate: "2026-01-20",
+    overallStartDate: "2026-01-15",
+    target: "CO",
+    sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "Support in principle",
+        date: "2026-01-18",
+      },
+    ],
+  },
 
-  // --- EI in progress / issued (will show in last table once issued) ---
+  // --- EI in progress / issued ---
   {
     id: "EI-A-004",
     type: "EI",
