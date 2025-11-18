@@ -231,11 +231,11 @@ function issuedItemLabel(r: ChangeRecord): string {
 }
 
 // ==========================================
-// Demo data (more examples for all 3 tables)
+// Demo data – many examples across stages
 // ==========================================
-
 const DEMO: ChangeRecord[] = [
-  // --- PCRs → EI ---
+  // ===== PCRs → EI (Table 1) =====
+
   {
     id: "PCR-A-013",
     type: "PRC",
@@ -267,6 +267,7 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
+
   {
     id: "PCR-C-021",
     type: "PRC",
@@ -295,14 +296,75 @@ const DEMO: ChangeRecord[] = [
     ],
   },
 
-  // --- PCRs → CO / V / VOS / AA-SA ---
+  // PCR → EI currently at CC Outcome
+  {
+    id: "PCR-D-022",
+    type: "PRC",
+    package: "D",
+    title: "Platform Edge Realignment (PCR)",
+    estimated: 420000,
+    actual: 430000,
+    stageKey: "CC_OUTCOME",
+    subStatus: "Approved",
+    stageStartDate: "2026-02-01",
+    overallStartDate: "2026-01-20",
+    target: "EI",
+    sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "Recommended",
+        date: "2026-01-28",
+      },
+      {
+        role: "CC",
+        name: "Change Committee",
+        decision: "Approved",
+        date: "2026-02-01",
+      },
+    ],
+  },
+
+  // PCR → EI currently at CEO / Board Memo
+  {
+    id: "PCR-E-010",
+    type: "PRC",
+    package: "E",
+    title: "Additional Lighting in Maintenance Yard (PCR)",
+    estimated: 280000,
+    stageKey: "CEO_OR_BOARD_MEMO",
+    subStatus: "In Circulation",
+    stageStartDate: "2026-02-05",
+    overallStartDate: "2026-01-25",
+    target: "EI",
+    sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
+    reviewList: [
+      {
+        role: "Finance",
+        name: "Muna Al-Harthy",
+        decision: "Budget confirmed",
+        date: "2026-02-02",
+      },
+    ],
+    signatureList: [
+      {
+        role: "CEO",
+        name: "Ahmed Al-Habsi",
+        signed: false,
+      },
+    ],
+  },
+
+  // ===== PCRs → CO / V / VOS / AA-SA (Table 2) =====
+
   {
     id: "PCR-A-018",
     type: "PRC",
     package: "A",
     title: "Handrail Height Adjustment (PCR)",
     estimated: 650000,
-    actual: 700000, // example – change to your real value
+    actual: 700000,
     stageKey: "PRC",
     subStatus: "In Preparation",
     stageStartDate: "2026-01-12",
@@ -338,18 +400,19 @@ const DEMO: ChangeRecord[] = [
     ],
     links: [
       {
-        label: "CEO/Board Memo (PDF)",
-        href: "https://example.com/memos/CO-A-019.pdf",
+        label: "CEO/Board Memo (Draft PDF)",
+        href: "https://example.com/memos/PCR-A-018-memo-draft.pdf",
       },
     ],
   },
+
   {
     id: "PCR-B-009",
     type: "PRC",
     package: "B",
     title: "Additional Cross Drain at Km 14+200 (PCR)",
     estimated: 950000,
-    actual: 900000, // example – change as needed
+    actual: 900000,
     stageKey: "PRC",
     subStatus: "Presented at CC",
     stageStartDate: "2026-01-20",
@@ -366,7 +429,63 @@ const DEMO: ChangeRecord[] = [
     ],
   },
 
-  // --- EI in progress / issued ---
+  // PCR → CO currently at CC Outcome
+  {
+    id: "PCR-F-005",
+    type: "PRC",
+    package: "F",
+    title: "Turnout Heating Modification (PCR)",
+    estimated: 1300000,
+    actual: 1250000,
+    stageKey: "CC_OUTCOME",
+    subStatus: "Approved with Conditions",
+    stageStartDate: "2026-02-03",
+    overallStartDate: "2026-01-22",
+    target: "CO",
+    sponsor: "Signalling Manager – Eng. Talal Al-Balushi",
+    reviewList: [
+      {
+        role: "CC",
+        name: "Change Committee",
+        decision: "Approved with conditions",
+        date: "2026-02-03",
+      },
+    ],
+  },
+
+  // PCR → CO currently at CEO / Board Memo
+  {
+    id: "PCR-G-011",
+    type: "PRC",
+    package: "G",
+    title: "Ballast Shoulder Widening (PCR)",
+    estimated: 2100000,
+    actual: 2150000,
+    stageKey: "CEO_OR_BOARD_MEMO",
+    subStatus: "In Approval",
+    stageStartDate: "2026-02-08",
+    overallStartDate: "2026-01-28",
+    target: "CO",
+    sponsor: "Track Engineering Manager",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "Recommended to CEO",
+        date: "2026-02-06",
+      },
+    ],
+    signatureList: [
+      {
+        role: "CEO",
+        name: "Ahmed Al-Habsi",
+        signed: false,
+      },
+    ],
+  },
+
+  // ===== EI in progress / issued (used in details / summary) =====
+
   {
     id: "EI-A-004",
     type: "EI",
@@ -391,6 +510,7 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
+
   {
     id: "EI-B-007",
     type: "EI",
@@ -412,7 +532,21 @@ const DEMO: ChangeRecord[] = [
     ],
   },
 
-  // --- Completed CO / V / VOS / AA-SA ---
+  {
+    id: "EI-C-009",
+    type: "EI",
+    package: "C",
+    title: "Drainage Rerouting at Station C-05 (EI)",
+    estimated: 0,
+    stageKey: "EI",
+    subStatus: "To be Issued to Contractor",
+    stageStartDate: "2026-02-12",
+    overallStartDate: "2026-02-10",
+    sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
+  },
+
+  // ===== Completed CO / V / VOS / AA-SA (Table 3) =====
+
   {
     id: "CO-G-032",
     type: "CO",
@@ -455,6 +589,7 @@ const DEMO: ChangeRecord[] = [
       },
     ],
   },
+
   {
     id: "CO-D-014",
     type: "CO",
@@ -484,6 +619,44 @@ const DEMO: ChangeRecord[] = [
         signed: true,
       },
     ],
+  },
+
+  {
+    id: "CO-B-020",
+    type: "CO",
+    package: "B",
+    title: "Modification to Station Access Road (Final)",
+    estimated: 1100000,
+    actual: 1080000,
+    outcome: "Approved",
+    stageKey: "AA_SA",
+    subStatus: "Done",
+    stageStartDate: "2025-09-15",
+    overallStartDate: "2025-08-20",
+    sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    reviewList: [
+      {
+        role: "PMEC",
+        name: "Engineer Team",
+        decision: "Approved",
+        date: "2025-09-10",
+      },
+    ],
+  },
+
+  {
+    id: "CO-E-003",
+    type: "CO",
+    package: "E",
+    title: "Workshop Drainage Improvement (Final)",
+    estimated: 300000,
+    actual: 295000,
+    outcome: "Approved",
+    stageKey: "CO_V_VOS",
+    subStatus: "Done",
+    stageStartDate: "2025-10-01",
+    overallStartDate: "2025-09-05",
+    sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
   },
 ];
 
