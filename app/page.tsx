@@ -1398,87 +1398,97 @@ export default function ChangeOrdersDashboard({
           </div>
 
           {/* PCR → EI section (Table 1) */}
-          <section>
-            <PathTimeline
-              label="PCRs → EI"
-              stages={["PRC", "CC Outcome", "CEO / Board Memo", "EI"]}
-            />
-            <ChangeTableHeader showMiddleColumn={false} />
-            {pcrToEiRows.length > 0 ? (
-              pcrToEiRows.map((r) => (
-                <Row
-                  key={r.id}
-                  r={r}
-                  showMiddleColumn={false}
-                  mode="pcr"
-                />
-              ))
-            ) : (
-              <div className="px-4 py-4 text-xs text-neutral-500">
-                No PCRs currently tagged as PCR → EI after filters.
-              </div>
-            )}
-          </section>
+<Card className="rounded-2xl border shadow-sm mb-6">
+  <CardContent className="p-0">
+
+    <section>
+      <PathTimeline
+        label="PCRs → EI"
+        stages={["PRC", "CC Outcome", "CEO / Board Memo", "EI"]}
+      />
+
+      <ChangeTableHeader />
+
+      {pcrToEiRows.length > 0 ? (
+        pcrToEiRows.map((r) => (
+          <Row key={r.id} r={r} mode="pcr" showMiddleColumn={false} />
+        ))
+      ) : (
+        <div className="px-4 py-4 text-xs text-neutral-500">
+          No PCRs currently tagged as PCR → EI after filters.
+        </div>
+      )}
+    </section>
+
+  </CardContent>
+</Card>
 
           {/* PCR → CO / V / VOS / AA-SA section (Table 2) */}
-          <section className="mt-6">
-            <PathTimeline
-              label="PCRs → CO / V / VOS / AA-SA"
-              stages={[
-                "PRC",
-                "CC Outcome",
-                "CEO / Board Memo",
-                "CO / V / VOS or AA / SA",
-              ]}
-            />
-            <ChangeTableHeader showMiddleColumn={false} />
-            {pcrToCoRows.length > 0 ? (
-              pcrToCoRows.map((r) => (
-                <Row
-                  key={r.id}
-                  r={r}
-                  showMiddleColumn={false}
-                  mode="pcr"
-                />
-              ))
-            ) : (
-              <div className="px-4 py-4 text-xs text-neutral-500">
-                No PCRs currently tagged as PCR → CO / V / VOS after filters.
-              </div>
-            )}
-          </section>
+<Card className="rounded-2xl border shadow-sm mb-6">
+  <CardContent className="p-0">
+
+    <section>
+      <PathTimeline
+        label="PCRs → CO / V / VOS / AA-SA"
+        stages={[
+          "PRC",
+          "CC Outcome",
+          "CEO / Board Memo",
+          "CO / V / VOS or AA / SA",
+        ]}
+      />
+
+      <ChangeTableHeader />
+
+      {pcrToCoRows.length > 0 ? (
+        pcrToCoRows.map((r) => (
+          <Row key={r.id} r={r} mode="pcr" showMiddleColumn={false} />
+        ))
+      ) : (
+        <div className="px-4 py-4 text-xs text-neutral-500">
+          No PCRs currently tagged as PCR → CO / V / VOS after filters.
+        </div>
+      )}
+    </section>
+
+  </CardContent>
+</Card>
 
           {/* Completed items section (Table 3) */}
-          <section className="mt-6 mb-2">
-            <PathTimeline
-              label="Completed (EI / CO / V / VOS or AA / SA Issued)"
-              stages={[
-                "PRC",
-                "CC Outcome",
-                "CEO / Board Memo",
-                "Issued Item (EI / CO / V / VOS / AA / SA)",
-              ]}
-            />
-            <ChangeTableHeader
-              showMiddleColumn={true}
-              middleLabel="Issued Item"
-            />
-            {completedRows.length > 0 ? (
-              completedRows.map((r) => (
-                <Row
-                  key={r.id}
-                  r={r}
-                  showMiddleColumn={true}
-                  mode="completed"
-                />
-              ))
-            ) : (
-              <div className="px-4 py-4 text-xs text-neutral-500">
-                No completed changes (EI / CO / V / VOS or AA / SA Issued)
-                under current filters.
-              </div>
-            )}
-          </section>
+<Card className="rounded-2xl border shadow-sm mb-6">
+  <CardContent className="p-0">
+
+    <section>
+      <PathTimeline
+        label="Completed (EI / CO / V / VOS or AA / SA Issued)"
+        stages={[
+          "PRC",
+          "CC Outcome",
+          "CEO / Board Memo",
+          "Issued Item (EI / CO / V / VOS / AA / SA)",
+        ]}
+      />
+
+      <ChangeTableHeader showMiddleColumn />
+
+      {completedRows.length > 0 ? (
+        completedRows.map((r) => (
+          <Row
+            key={r.id}
+            r={r}
+            mode="completed"
+            showMiddleColumn={true}
+          />
+        ))
+      ) : (
+        <div className="px-4 py-4 text-xs text-neutral-500">
+          No completed changes under the current filters.
+        </div>
+      )}
+    </section>
+
+  </CardContent>
+</Card>
 
           {/* If there are no PCR rows at all but other rows exist */}
           {pcrRows.length === 0 && view.length > 0 && (
