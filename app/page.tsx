@@ -55,7 +55,7 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
-  target?: "EI" | "CO" | "TBC"; // PCR target (if type = PRC)
+  target?: "EI" | "CO" | "EI+CO" | "TBC" | "VOS"; // PCR target (if type = PRC)
   sponsor?: string; // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
