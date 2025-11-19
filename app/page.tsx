@@ -160,8 +160,26 @@ const STAGE_OPTIONS: Record<StageKey, string[]> = {
     "Issued",
     "To be Issued to Contractor",
   ],
-  CO_V_VOS: ["NA", "Done"],
-  AA_SA: ["NA", "Done"],
+  CO_V_VOS: [
+    "To be Prepared",
+    "In Preparation",
+    "Under Review",
+    "Ready",
+    "In Circulation",
+    "In Approval",
+    "Issued",
+    "To be Issued to Contractor",
+  ],
+  AA_SA: [
+    "To be Prepared",
+    "In Preparation",
+    "Under Review",
+    "Ready",
+    "In Circulation",
+    "In Approval",
+    "Issued",
+    "To be Issued to Contractor",
+  ],
 };
 
 const fmt = new Intl.NumberFormat("en-AE", {
