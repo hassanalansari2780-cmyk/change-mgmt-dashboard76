@@ -22,7 +22,7 @@ export type StageKey =
 
 export type PackageId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "I2" | "PMEC";
 
-export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD" | "VOS";
+export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD" | "VOS" | "AA";
 
 interface Reviewer {
   role: string;
