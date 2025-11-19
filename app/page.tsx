@@ -22,7 +22,7 @@ export type StageKey =
 
 export type PackageId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "I2" | "PMEC";
 
-export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD";
+export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD" | "VOS";
 
 interface Reviewer {
   role: string;
@@ -949,7 +949,7 @@ function computeSummary(rows: ChangeRecord[]) {
 
   const pcrs = rows.filter((r) => r.type === "PRC");
   const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
-  const pcrToCO = pcrs.filter((r) => r.target === "CO").length;
+  const pcrToCO = pcrs.filter((r) => r.target === "CO" || r.target === "VOS").length;
 
   // Completed = EI (Issued / To be Issued) OR CO/V/VOS (Done) OR AA/SA (Done)
   const completed = rows.filter((r) => {
