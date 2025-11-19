@@ -20,25 +20,34 @@ export type StageKey =
   | "CO_V_VOS"
   | "AA_SA";
 
-export type PackageId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "I2" | "PMEC";
+export type PackageId =
+  | "A"
+  | "B"
+  | "C"
+  | "D"
+  | "E"
+  | "F"
+  | "G"
+  | "I2"
+  | "PMEC";
 
-export type PcrTarget = "EI" | "CO" | "EI+CO" | "TBD" | "VOS" | "AA";
+export type PcrTarget = "EI" | "CO" | "EI+CO" | "VOS" | "TBC" | "AA";
 
-interface Reviewer {
+export interface Reviewer {
   role: string;
   name: string;
   date?: string;
   decision?: string;
 }
 
-interface Signer {
+export interface Signer {
   role: string;
   name: string;
   date?: string;
   signed?: boolean;
 }
 
-interface LinkItem {
+export interface LinkItem {
   label: string;
   href: string;
 }
@@ -55,12 +64,12 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
-  target?: "EI" | "CO" | "EI+CO" | "TBC" | "VOS"; // PCR target (if type = PRC)
-  sponsor?: string; // Change sponsor
+  target?: PcrTarget;      // ✅ now uses PcrTarget (includes "AA")
+  sponsor?: string;        // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
-  prcTarget?: PcrTarget; // For PCRs: intended path (EI or CO)
+  prcTarget?: PcrTarget;   // optional second field if you want it
 }
 
 // ==========================================
