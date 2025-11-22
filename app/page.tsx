@@ -1014,13 +1014,59 @@ function SummaryCard({ rows }: { rows: ChangeRecord[] }) {
 }
 
 // ==========================================
-// Project KPIs row
+// Project KPIs row (with 3 modals)
 // ==========================================
 function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
-  const TOTAL_PROJECT_VALUE = 500_000_000; // demo: AED 500M
   const LIMIT_PERCENT = 10; // max 10% threshold
+  const NEXT_CC_MEETING = "CC-12";
+
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showChangeModal, setShowChangeModal] = useState(false);
+  const [showCcModal, setShowCcModal] = useState(false);
+
+  // Small reusable modal shell
+  const Modal = ({
+    open,
+    title,
+    onClose,
+    children,
+  }: {
+    open: boolean;
+    title: string;
+    onClose: () => void;
+    children: React.ReactNode;
+  }) => {
+    if (!open) return null;
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+        <div className="w-full max-w-4xl rounded-3xl bg-white shadow-xl">
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="text-lg font-semibold">{title}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-2xl"
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
+          <div className="max-h-[70vh] overflow-auto px-6 py-4 text-sm">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const k = useMemo(() => {
+    // --- Total project value from breakdown ---
+    const totalProjectValue = CONTRACT_BREAKDOWN.reduce(
+      (sum, c) => sum + c.value,
+      0,
+    );
+
+    // --- Approved change orders (for value KPIs & per-package breakdown) ---
     const approvedRows = rows.filter(
       (r) => r.outcome === "Approved" && typeof r.actual === "number",
     );
@@ -1030,14 +1076,14 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
       0,
     );
 
-    const changeRatio = TOTAL_PROJECT_VALUE
-      ? totalApprovedValue / TOTAL_PROJECT_VALUE
+    const changeRatio = totalProjectValue
+      ? totalApprovedValue / totalProjectValue
       : 0;
 
     const changePercent = changeRatio * 100;
     const changePercentDisplay = changePercent.toFixed(2);
 
-    const limitValue = TOTAL_PROJECT_VALUE * (LIMIT_PERCENT / 100);
+    const limitValue = totalProjectValue * (LIMIT_PERCENT / 100);
 
     const approvedVsLimitPct = limitValue
       ? Math.min(100, Math.max(0, (totalApprovedValue / limitValue) * 100))
@@ -1047,17 +1093,55 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
       ? Math.min(100, Math.max(0, (changePercent / LIMIT_PERCENT) * 100))
       : 0;
 
+    // --- Per-package change breakdown for the details modal ---
+    const pkgList: PackageId[] = ["A", "B", "C", "D", "E", "F", "G", "I2", "PMEC"];
+    const perPackage: Record<
+      PackageId,
+      { estimated: number; actual: number; count: number }
+    > = {} as any;
+
+    for (const p of pkgList) {
+      perPackage[p] = { estimated: 0, actual: 0, count: 0 };
+    }
+
+    approvedRows.forEach((r) => {
+      const bucket = perPackage[r.package];
+      if (!bucket) return;
+      bucket.estimated += r.estimated ?? 0;
+      bucket.actual += r.actual ?? 0;
+      bucket.count += 1;
+    });
+
+    // --- PCRs on upcoming CC agenda ---
+    const pcrRows = rows.filter((r) => r.type === "PRC");
+    const agendaRows = pcrRows.filter(
+      (r) =>
+        r.stageKey === "PRC" &&
+        (r.subStatus === "Ready for CC" || r.subStatus === "Presented at CC"),
+    );
+
+    const totalOnAgenda = agendaRows.length;
+    const onAgendaEi = agendaRows.filter((r) => r.target === "EI").length;
+    const onAgendaCo = agendaRows.filter(
+      (r) => r.target === "CO" || r.target === "VOS",
+    ).length;
+
     return {
-      totalProjectValue: TOTAL_PROJECT_VALUE,
+      totalProjectValue,
       totalApprovedValue,
       changePercentDisplay,
       limitValue,
       approvedVsLimitPct,
       percentVsLimitPct,
+      perPackage,
+      agendaRows,
+      totalOnAgenda,
+      onAgendaEi,
+      onAgendaCo,
     };
   }, [rows]);
 
-  // --- Single KPI card ---
+  // --- Single KPI card --- //
   const Item = ({
     label,
     value,
@@ -1118,38 +1202,260 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     </Card>
   );
 
+  // ==== CC Meeting card helper ====
+  const CcCard = () => (
+    <Card className="rounded-2xl shadow-sm h-[180px]">
+      <CardContent className="p-4 h-full flex flex-col justify-between">
+        <div className="flex flex-col space-y-1">
+          <div className="text-sm text-muted-foreground leading-none">
+            Next CC Meeting
+          </div>
+          <div className="text-xl font-semibold leading-tight">
+            {NEXT_CC_MEETING}
+          </div>
+          <div className="mt-3 space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>Total PCRs on agenda</span>
+              <span>{k.totalOnAgenda}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>PCRs targeting EI</span>
+              <span>{k.onAgendaEi}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>PCRs targeting CO / V / VOS / AA</span>
+              <span>{k.onAgendaCo}</span>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-2xl px-3 py-1 text-xs self-start"
+          onClick={() => setShowCcModal(true)}
+        >
+          Details
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
-      {/* 1) Total Project Value — kept simple demo */}
-      <Item
-        label="Total Project Value"
-        value={fmt.format(k.totalProjectValue)}
-      />
+    <>
+      {/* KPI cards row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-stretch">
+        {/* 1) Total Project Value — with breakdown modal */}
+        <Item
+          label="Total Project Value"
+          value={fmt.format(k.totalProjectValue)}
+          onDetails={() => setShowProjectModal(true)}
+        />
 
-      {/* 2) Total Approved Change Value — vs 10% limit */}
-      <Item
-        label="Total Approved Change Value"
-        value={fmt.format(k.totalApprovedValue)}
-        subtitle={`of ${fmt.format(k.limitValue)} limit (${LIMIT_PERCENT}% of project)`}
-        showBar
-        barValue={k.approvedVsLimitPct}
-        barCaption={`${k.approvedVsLimitPct.toFixed(
-          0,
-        )}% of allowed envelope used`}
-      />
+        {/* 2) Total Approved Change Value — with per-package modal */}
+        <Item
+          label="Total Approved Change Value"
+          value={fmt.format(k.totalApprovedValue)}
+          subtitle={`of ${fmt.format(k.limitValue)} limit (${LIMIT_PERCENT}% of project)`}
+          showBar
+          barValue={k.approvedVsLimitPct}
+          barCaption={`${k.approvedVsLimitPct.toFixed(
+            0,
+          )}% of allowed envelope used`}
+          onDetails={() => setShowChangeModal(true)}
+        />
 
-      {/* 3) Change % of Project — vs 10% limit */}
-      <Item
-        label="Change % of Project"
-        value={`${k.changePercentDisplay}%`}
-        subtitle={`of ${LIMIT_PERCENT}% limit`}
-        showBar
-        barValue={k.percentVsLimitPct}
-        barCaption={`${k.percentVsLimitPct.toFixed(
-          0,
-        )}% of percentage limit used`}
-      />
-    </div>
+        {/* 3) Change % of Project — same as before, no modal needed */}
+        <Item
+          label="Change % of Project"
+          value={`${k.changePercentDisplay}%`}
+          subtitle={`of ${LIMIT_PERCENT}% limit`}
+          showBar
+          barValue={k.percentVsLimitPct}
+          barCaption={`${k.percentVsLimitPct.toFixed(
+            0,
+          )}% of percentage limit used`}
+        />
+
+        {/* 4) Next CC Meeting card */}
+        <CcCard />
+      </div>
+
+      {/* ===== Modals ===== */}
+
+      {/* Total Project Value breakdown */}
+      <Modal
+        open={showProjectModal}
+        title="Total Project Value – Breakdown by Contract"
+        onClose={() => setShowProjectModal(false)}
+      >
+        <div className="mb-3 text-sm text-muted-foreground">
+          This breakdown shows the base award value for each main contract /
+          package. The total matches the <b>Total Project Value</b> KPI.
+        </div>
+        <div className="border rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-3 px-4 py-2 text-xs font-semibold text-neutral-600 bg-neutral-50">
+            <div>Package</div>
+            <div>Contract</div>
+            <div className="text-right">Value</div>
+          </div>
+          {CONTRACT_BREAKDOWN.map((c) => (
+            <div
+              key={c.package}
+              className="grid grid-cols-3 px-4 py-2 text-sm border-t"
+            >
+              <div>{c.package}</div>
+              <div>{c.label}</div>
+              <div className="text-right tabular-nums">
+                {fmt.format(c.value)}
+              </div>
+            </div>
+          ))}
+          <div className="grid grid-cols-3 px-4 py-3 text-sm font-semibold bg-neutral-50 border-t">
+            <div />
+            <div className="text-right">Total Project Value</div>
+            <div className="text-right tabular-nums">
+              {fmt.format(k.totalProjectValue)}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Total Approved Change Value breakdown */}
+      <Modal
+        open={showChangeModal}
+        title="Approved Change Value – Breakdown by Package"
+        onClose={() => setShowChangeModal(false)}
+      >
+        <div className="mb-3 text-sm text-muted-foreground">
+          Includes only items with outcome <b>Approved</b>. For each package the
+          table shows total estimated change value, total actual value (if
+          available), and the variance.
+        </div>
+
+        <div className="border rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-5 px-4 py-2 text-xs font-semibold text-neutral-600 bg-neutral-50">
+            <div>Package</div>
+            <div className="text-right">Estimated (sum)</div>
+            <div className="text-right">Actual (sum)</div>
+            <div className="text-right">Variance</div>
+            <div className="text-right"># of COs</div>
+          </div>
+
+          {(["A", "B", "C", "D", "E", "F", "G", "I2", "PMEC"] as PackageId[])
+            .filter((p) => k.perPackage[p].count > 0)
+            .map((p) => {
+              const row = k.perPackage[p];
+              const variance = row.actual - row.estimated;
+              return (
+                <div
+                  key={p}
+                  className="grid grid-cols-5 px-4 py-2 text-sm border-t"
+                >
+                  <div>{p}</div>
+                  <div className="text-right tabular-nums">
+                    {fmt.format(row.estimated)}
+                  </div>
+                  <div className="text-right tabular-nums">
+                    {fmt.format(row.actual)}
+                  </div>
+                  <div className="text-right tabular-nums">
+                    {row.count === 0
+                      ? "—"
+                      : `${variance > 0 ? "+" : variance < 0 ? "-" : ""}${fmt.format(
+                          Math.abs(variance),
+                        )}`}
+                  </div>
+                  <div className="text-right tabular-nums">{row.count}</div>
+                </div>
+              );
+            })}
+
+          <div className="grid grid-cols-5 px-4 py-3 text-sm font-semibold bg-neutral-50 border-t">
+            <div>Total</div>
+            <div className="text-right tabular-nums">
+              {fmt.format(
+                (["A", "B", "C", "D", "E", "F", "G", "I2", "PMEC"] as PackageId[])
+                  .map((p) => k.perPackage[p].estimated)
+                  .reduce((a, b) => a + b, 0),
+              )}
+            </div>
+            <div className="text-right tabular-nums">
+              {fmt.format(k.totalApprovedValue)}
+            </div>
+            <div className="text-right tabular-nums">
+              {fmt.format(
+                (["A", "B", "C", "D", "E", "F", "G", "I2", "PMEC"] as PackageId[])
+                  .map((p) => k.perPackage[p].actual - k.perPackage[p].estimated)
+                  .reduce((a, b) => a + b, 0),
+              )}
+            </div>
+            <div className="text-right tabular-nums">
+              {(["A", "B", "C", "D", "E", "F", "G", "I2", "PMEC"] as PackageId[])
+                .map((p) => k.perPackage[p].count)
+                .reduce((a, b) => a + b, 0)}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Next CC Meeting agenda modal */}
+      <Modal
+        open={showCcModal}
+        title={`Next CC Meeting – ${NEXT_CC_MEETING} Agenda`}
+        onClose={() => setShowCcModal(false)}
+      >
+        <div className="mb-3 text-sm text-muted-foreground">
+          Shows all PCRs currently at <b>PRC</b> stage with sub-status{" "}
+          <b>Ready for CC</b> or <b>Presented at CC</b>. Items marked as
+          &ldquo;Carry-over&rdquo; are assumed to have been presented in the
+          previous meeting (CC-11) and kept on the agenda.
+        </div>
+
+        <div className="border rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-6 px-4 py-2 text-xs font-semibold text-neutral-600 bg-neutral-50">
+            <div>Ref ID</div>
+            <div>Pkg</div>
+            <div>Target</div>
+            <div>Status</div>
+            <div>Sponsor</div>
+            <div className="text-right">Est. Value</div>
+          </div>
+
+          {k.agendaRows.length === 0 && (
+            <div className="px-4 py-3 text-sm text-muted-foreground border-t">
+              No PCRs currently tagged for the next CC under the active
+              filters.
+            </div>
+          )}
+
+          {k.agendaRows.map((r) => {
+            const isCarryOver = r.subStatus === "Presented at CC";
+            return (
+              <div
+                key={r.id}
+                className="grid grid-cols-6 px-4 py-2 text-sm border-t"
+              >
+                <div>{r.id}</div>
+                <div>{r.package}</div>
+                <div>{r.target ?? "—"}</div>
+                <div>
+                  {isCarryOver
+                    ? "Carry-over from CC-11"
+                    : `New in ${NEXT_CC_MEETING}`}
+                </div>
+                <div className="truncate">{r.sponsor ?? "—"}</div>
+                <div className="text-right tabular-nums">
+                  {typeof r.estimated === "number"
+                    ? fmt.format(r.estimated)
+                    : "—"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
+    </>
   );
 }
 
@@ -1571,6 +1877,16 @@ function PackageChips({
     </div>
   );
 }
+
+// Demo contract values used for Total Project Value breakdown
+const CONTRACT_BREAKDOWN: { package: PackageId; label: string; value: number }[] = [
+  { package: "A", label: "Package A – Systems", value: 80_000_000 },
+  { package: "B", label: "Package B – Track", value: 70_000_000 },
+  { package: "C", label: "Package C – Civil", value: 90_000_000 },
+  { package: "D", label: "Package D – Stations", value: 60_000_000 },
+  { package: "E", label: "Package E – Depots & Workshops", value: 75_000_000 },
+  { package: "F", label: "Package F – Rolling Stock", value: 125_000_000 },
+];
 
 // ==========================================
 // Filters
