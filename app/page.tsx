@@ -64,19 +64,15 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
-  target?: PcrTarget; // main path target
+  target?: PcrTarget; // PCR intended to become EI / CO / VOS / AA
   sponsor?: string; // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
-
-  // ✅ New: CC information (for PCRs that are Ready for CC)
-  ccInfo?: {
-    nextCcNo: number; // upcoming CC meeting number
-    firstCcNo: number; // first CC where it was tabled
-  };
-
-  prcTarget?: PcrTarget; // optional second field if you want it
+  prcTarget?: PcrTarget; // optional second field if you want it for CSV
+  // --- New fields for upcoming CC demo ---
+  ccPlannedForNext?: boolean; // included in next CC agenda
+  ccPreviousMeeting?: number; // if carry-over, original CC number
 }
 
 // ==========================================
@@ -205,6 +201,9 @@ const fmt = new Intl.NumberFormat("en-AE", {
 });
 const fmtShort = new Intl.NumberFormat("en-US");
 const FINAL_KEY: StageKey = "AA_SA";
+
+// Demo: upcoming CC meeting number
+const NEXT_CC_MEETING_NO = 12;
 
 // ==========================================
 // Utils
@@ -382,6 +381,7 @@ const DEMO: ChangeRecord[] = [
     overallStartDate: "2026-01-10",
     target: "EI",
     sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
+    ccPlannedForNext: true, // New for CC-12 (EI)
     reviewList: [
       {
         role: "Contracts Specialist",
@@ -396,11 +396,6 @@ const DEMO: ChangeRecord[] = [
         date: "2026-01-17",
       },
     ],
-    // ✅ Ready for upcoming CC-12, first time
-    ccInfo: {
-      nextCcNo: 12,
-      firstCcNo: 12,
-    },
   },
 
   // PCR → EI currently at CC Outcome
@@ -464,24 +459,18 @@ const DEMO: ChangeRecord[] = [
   },
 
   // ===== PCRs → CO / V / VOS / AA-SA (Table 2) =====
-
   {
     id: "PCR-B-020",
     type: "PRC",
     package: "B",
     title: "Drainage Channel Reinforcement (PCR)",
     estimated: 780000,
-    stageKey: "PRC",
-    subStatus: "Ready for CC",
+    stageKey: "CO_V_VOS",
+    subStatus: "To be Prepared",
     stageStartDate: "2026-02-13",
     overallStartDate: "2026-02-13",
     target: "CO",
     sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
-    // ✅ Also going to CC-12, but carried over from CC-11
-    ccInfo: {
-      nextCcNo: 12,
-      firstCcNo: 11,
-    },
   },
 
   {
@@ -555,6 +544,7 @@ const DEMO: ChangeRecord[] = [
     overallStartDate: "2026-01-12",
     target: "CO",
     sponsor: "HSSE Manager – Eng. Salim Al-Harthy",
+    ccPlannedForNext: true, // New CO item for CC-12
     reviewList: [
       {
         role: "Contracts Engineer",
@@ -603,6 +593,8 @@ const DEMO: ChangeRecord[] = [
     overallStartDate: "2026-01-15",
     target: "CO",
     sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    ccPlannedForNext: true, // Carry-over item
+    ccPreviousMeeting: 11, // from CC-11 to CC-12
     reviewList: [
       {
         role: "PMEC",
@@ -975,9 +967,7 @@ function computeSummary(rows: ChangeRecord[]) {
 
   const pcrs = rows.filter((r) => r.type === "PRC");
   const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
-  const pcrToCO = pcrs.filter(
-    (r) => r.target === "CO" || r.target === "VOS" || r.target === "AA",
-  ).length;
+  const pcrToCO = pcrs.filter((r) => r.target === "CO" || r.target === "VOS" || r.target === "AA").length;
 
   // Completed = EI (Issued / To be Issued) OR CO/V/VOS (Done) OR AA/SA (Done)
   const completed = rows.filter((r) => {
@@ -1067,84 +1057,6 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     };
   }, [rows]);
 
-  // ✅ New: compute upcoming CC meeting summary
-  const cc = useMemo(() => {
-    const candidates = rows.filter(
-      (r) =>
-        r.type === "PRC" &&
-        r.stageKey === "PRC" &&
-        r.subStatus === "Ready for CC" &&
-        r.ccInfo?.nextCcNo,
-    );
-
-    if (!candidates.length) return null;
-
-    const nextNo = Math.min(...candidates.map((r) => r.ccInfo!.nextCcNo));
-    const nextRows = candidates.filter((r) => r.ccInfo!.nextCcNo === nextNo);
-
-    const eiCount = nextRows.filter(
-      (r) => r.target === "EI" || r.target === "EI+CO",
-    ).length;
-
-    const coCount = nextRows.filter(
-      (r) =>
-        r.target === "CO" || r.target === "VOS" || r.target === "AA",
-    ).length;
-
-    return { nextNo, eiCount, coCount, rows: nextRows };
-  }, [rows]);
-
-  // --- Details only for Total Project Value ---
-  const handleTotalProjectDetails = () => {
-    alert(
-      [
-        "Total Project Value represents the full contract value across all packages.",
-        "",
-        "In the real dashboard, this Details view would show:",
-        "• Project value per package (A, B, C…)",
-        "• Split between Omani and UAE portions (if applicable)",
-        "• Any excluded provisional sums.",
-      ].join("\n"),
-    );
-  };
-
-  // ✅ New: details for Next CC Meeting card
-  const handleCcDetails = () => {
-    if (!cc) {
-      alert("No PCRs are currently marked as 'Ready for CC'.");
-      return;
-    }
-
-    const lines: string[] = [
-      `Next CC Meeting: CC-${cc.nextNo}`,
-      `PCRs for EI path: ${cc.eiCount}`,
-      `PCRs for CO / V / VOS / AA path: ${cc.coCount}`,
-      "",
-      "Items:",
-      ...cc.rows.map((r) => {
-        const path =
-          r.target === "EI" || r.target === "EI+CO"
-            ? "EI path"
-            : "CO / V / VOS / AA-SA path";
-
-        const info = r.ccInfo;
-        let status = "";
-        if (info) {
-          status =
-            info.firstCcNo < info.nextCcNo
-              ? `Carried over from CC-${info.firstCcNo}`
-              : `First time in CC-${info.nextCcNo}`;
-        }
-
-        return `${r.id} – ${path} – Sponsor: ${
-          r.sponsor ?? "N/A"
-        } – ${status}`;
-      }),
-    ];
-
-    alert(lines.join("\n"));
-  };
-
   // --- Single KPI card ---
   const Item = ({
     label,
@@ -1207,21 +1119,18 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-stretch">
-      {/* 1) Total Project Value — with Details */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
+      {/* 1) Total Project Value — kept simple demo */}
       <Item
         label="Total Project Value"
         value={fmt.format(k.totalProjectValue)}
-        onDetails={handleTotalProjectDetails}
       />
 
       {/* 2) Total Approved Change Value — vs 10% limit */}
       <Item
         label="Total Approved Change Value"
         value={fmt.format(k.totalApprovedValue)}
-        subtitle={`of ${fmt.format(
-          k.limitValue,
-        )} limit (${LIMIT_PERCENT}% of project)`}
+        subtitle={`of ${fmt.format(k.limitValue)} limit (${LIMIT_PERCENT}% of project)`}
         showBar
         barValue={k.approvedVsLimitPct}
         barCaption={`${k.approvedVsLimitPct.toFixed(
@@ -1240,22 +1149,217 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
           0,
         )}% of percentage limit used`}
       />
+    </div>
+  );
+}
 
-      {/* 4) Next CC Meeting card */}
-      <Item
-        label={cc ? `Next CC – CC-${cc.nextNo}` : "Next CC Meeting"}
-        value={
-          cc
-            ? `${cc.eiCount} EI / ${cc.coCount} CO`
-            : "No PCRs Ready for CC"
-        }
-        subtitle={
-          cc
-            ? "PCRs marked 'Ready for CC'"
-            : "Update PCRs to 'Ready for CC' to show them here"
-        }
-        onDetails={cc ? handleCcDetails : undefined}
-      />
+// ==========================================
+// Next CC Meeting – summary & modal
+// ==========================================
+type NextCcSummary = {
+  nextCcNo: number;
+  total: number;
+  eiCount: number;
+  coCount: number;
+  rows: ChangeRecord[];
+};
+
+function computeNextCcSummary(rows: ChangeRecord[]): NextCcSummary {
+  const ccRows = rows.filter((r) => r.type === "PRC" && r.ccPlannedForNext);
+  const eiCount = ccRows.filter((r) => r.target === "EI").length;
+  const coCount = ccRows.filter(
+    (r) => r.target === "CO" || r.target === "VOS" || r.target === "AA",
+  );
+  return {
+    nextCcNo: NEXT_CC_MEETING_NO,
+    total: ccRows.length,
+    eiCount,
+    coCount: coCount.length,
+    rows: ccRows,
+  };
+}
+
+function NextCcCard({
+  rows,
+  onOpenDetails,
+}: {
+  rows: ChangeRecord[];
+  onOpenDetails: () => void;
+}) {
+  const summary = useMemo(() => computeNextCcSummary(rows), [rows]);
+
+  return (
+    <Card className="rounded-2xl shadow-sm h-full">
+      <CardContent className="p-4 h-full flex flex-col justify-between">
+        <div>
+          <div className="text-sm text-muted-foreground">
+            Next CC Meeting
+          </div>
+          <div className="text-xl font-semibold mt-1">
+            {summary.nextCcNo
+              ? `CC-${summary.nextCcNo.toString().padStart(2, "0")}`
+              : "—"}
+          </div>
+
+          <div className="mt-3 space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>Total PCRs on agenda</span>
+              <span>{summary.total || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>PCRs targeting EI</span>
+              <span>{summary.eiCount || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>PCRs targeting CO / V / VOS / AA</span>
+              <span>{summary.coCount || 0}</span>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-2xl px-3 py-1 text-xs self-start mt-4"
+          onClick={onOpenDetails}
+          disabled={summary.total === 0}
+        >
+          Details
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NextCcModal({
+  rows,
+  onClose,
+}: {
+  rows: ChangeRecord[];
+  onClose: () => void;
+}) {
+  const summary = useMemo(() => computeNextCcSummary(rows), [rows]);
+  const ccRows = summary.rows;
+
+  if (ccRows.length === 0) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              Change Committee
+            </div>
+            <div className="text-xl font-semibold">
+              Next CC Meeting –{" "}
+              {`CC-${summary.nextCcNo.toString().padStart(2, "0")}`}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full px-4"
+            onClick={onClose}
+          >
+            Close
+          </Button>
+        </div>
+
+        {/* Top summary */}
+        <div className="px-6 py-3 border-b grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <div className="text-muted-foreground">Total PCRs on agenda</div>
+            <div className="font-medium">{summary.total}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Targeting EI</div>
+            <div className="font-medium">{summary.eiCount}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">
+              Targeting CO / V / VOS / AA
+            </div>
+            <div className="font-medium">{summary.coCount}</div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="px-6 py-4 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-muted-foreground border-b">
+              <tr className="align-middle">
+                <th className="py-2 pr-3">Ref ID</th>
+                <th className="py-2 pr-3">Pkg</th>
+                <th className="py-2 pr-3 w-1/3">Title</th>
+                <th className="py-2 pr-3">Target</th>
+                <th className="py-2 pr-3">Status for CC-12</th>
+                <th className="py-2 pr-3">Sponsor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {ccRows.map((r) => {
+                const targetLabel =
+                  r.target === "EI" ? "EI" : "CO / V / VOS / AA";
+                const isCarryOver = typeof r.ccPreviousMeeting === "number";
+                const statusLabel = isCarryOver
+                  ? `Carry-over (from CC-${r.ccPreviousMeeting
+                      ?.toString()
+                      .padStart(2, "0")})`
+                  : "First time in this CC";
+
+                return (
+                  <tr key={r.id} className="align-top">
+                    <td className="py-2 pr-3 font-medium whitespace-nowrap">
+                      {r.id}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <span className="inline-flex w-7 h-7 rounded-full bg-muted items-center justify-center text-xs font-semibold">
+                        {r.package}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <div className="leading-snug">{r.title}</div>
+                    </td>
+                    <td className="py-2 pr-3 whitespace-nowrap">
+                      <span className="inline-flex px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium">
+                        {targetLabel}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 whitespace-nowrap">
+                      <span
+                        className={clsx(
+                          "inline-flex px-3 py-1 rounded-full text-xs font-medium",
+                          isCarryOver
+                            ? "bg-amber-50 text-amber-900"
+                            : "bg-sky-50 text-sky-900",
+                        )}
+                      >
+                        {statusLabel}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <div className="leading-snug max-w-xs">
+                        {r.sponsor ?? "—"}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Note */}
+        <div className="px-6 py-3 border-t text-xs text-muted-foreground">
+          Note: This is a demo view. In the live dashboard, PCRs would be
+          driven from the PCG/CC register and automatically tagged as{" "}
+          <span className="font-medium">New</span> or{" "}
+          <span className="font-medium">Carry-over</span> based on the previous
+          CC minutes.
+        </div>
+      </div>
     </div>
   );
 }
@@ -1373,7 +1477,12 @@ function ChangeTableHeader({
       <div className="col-span-2">Stage</div>
 
       {/* Optional middle column (for Issued Item in table 3) */}
-      <div className={clsx("col-span-1", !showMiddleColumn && "hidden")}>
+      <div
+        className={clsx(
+          "col-span-1",
+          !showMiddleColumn && "hidden",
+        )}
+      >
         {showMiddleColumn ? middleLabel : null}
       </div>
 
@@ -1513,7 +1622,6 @@ function Row({
 }) {
   const s = stageInfo(r.stageKey);
   const days = daysBetween(r.stageStartDate);
-  const [open, setOpen] = useState(false);
 
   const hasDocs = (r.links?.length ?? 0) > 0;
 
@@ -1521,19 +1629,6 @@ function Row({
     typeof r.estimated === "number" && typeof r.actual === "number"
       ? r.actual - r.estimated
       : null;
-
-  const showReview = !!(r.reviewList && r.reviewList.length);
-  const showSignatures = !!(r.signatureList && r.signatureList.length);
-
-  const isEICompleted =
-    r.stageKey === "EI" &&
-    (r.subStatus === "Issued" ||
-      r.subStatus === "To be Issued to Contractor");
-  const isCOOrAACompleted =
-    (r.stageKey === "AA_SA" || r.stageKey === "CO_V_VOS") &&
-    r.subStatus === "Done";
-
-  const showClosedSummary = isEICompleted || isCOOrAACompleted;
 
   return (
     <div className="border-b last:border-b-0 bg-white">
@@ -1594,23 +1689,16 @@ function Row({
             Day {days} / SLA {s.slaDays}
           </div>
 
-          {/* Details button ONLY for PCR tables (1 & 2) */}
-          {mode === "pcr" && (
-            <div className="mt-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-2xl px-3 py-1 text-xs"
-                onClick={() => setOpen((v) => !v)}
-              >
-                {open ? "Hide details" : "Details"}
-              </Button>
-            </div>
-          )}
+          {/* Inline details kept simple for now */}
         </div>
 
         {/* Middle column: hidden for tables 1 & 2, "Issued Item" for table 3 */}
-        <div className={clsx("col-span-1", !showMiddleColumn && "hidden")}>
+        <div
+          className={clsx(
+            "col-span-1",
+            !showMiddleColumn && "hidden",
+          )}
+        >
           {showMiddleColumn && mode === "completed" && (
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium">
               {issuedItemLabel(r)}
@@ -1648,218 +1736,10 @@ function Row({
           </div>
         </div>
       </div>
-
-      {/* Expanded details – ONLY for PCR (tables 1 & 2) */}
-      {mode === "pcr" && open && (
-        <div className="px-6 pb-4 bg-muted/30">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* 1) Stage progress breakdown */}
-            <Card className="rounded-2xl md:order-1">
-              <CardContent className="p-4">
-                <div className="text-sm font-semibold mb-2">
-                  Stage Progress —{" "}
-                  <span className={stageTextClass(s.color)}>{s.name}</span>
-                </div>
-                {(() => {
-                  const opts = STAGE_OPTIONS[r.stageKey];
-                  const currentIdx = Math.max(
-                    0,
-                    opts.findIndex((o) => o === (r.subStatus ?? "")),
-                  );
-                  return (
-                    <div className="space-y-4">
-                      {opts.map((opt, idx) => {
-                        const isCurrent = idx === currentIdx;
-                        const isCompleted = idx < currentIdx;
-                        const isFuture = idx > currentIdx;
-                        return (
-                          <div key={opt} className="flex items-start gap-3">
-                            <div
-                              className={clsx(
-                                "w-4 h-4 rounded-full border mt-1",
-                                isCurrent &&
-                                  "bg-emerald-600 border-emerald-600",
-                                isCompleted &&
-                                  !isCurrent &&
-                                  "bg-emerald-50 border-emerald-600",
-                                isFuture &&
-                                  "bg-white border-muted-foreground",
-                              )}
-                            />
-                            <div>
-                              <div
-                                className={clsx(
-                                  "text-sm",
-                                  isCurrent
-                                    ? "text-emerald-700 font-medium"
-                                    : isCompleted
-                                    ? "text-emerald-700"
-                                    : "text-foreground",
-                                )}
-                              >
-                                {opt}
-                              </div>
-                              {isCurrent && (
-                                <div className="text-xs text-emerald-700">
-                                  Current
-                                </div>
-                              )}
-                              {isCompleted && (
-                                <div className="text-xs text-emerald-700">
-                                  Completed
-                                </div>
-                              )}
-                              {isFuture && (
-                                <div className="text-xs text-muted-foreground">
-                                  Incomplete
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-
-            {/* 2) Review list */}
-            <Card className="rounded-2xl md:order-2">
-              <CardContent className="p-4">
-                <div className="text-sm font-semibold mb-2">Review List</div>
-                <div className="space-y-2 text-sm">
-                  {(showReview
-                    ? r.reviewList!
-                    : [{ role: "—", name: "No reviewers", decision: "" }]
-                  ).map((rv, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">{rv.role}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {rv.name}
-                        </div>
-                      </div>
-                      <div className="text-xs text-right text-muted-foreground">
-                        <div>{rv.date ?? "—"}</div>
-                        <div>{rv.decision ?? ""}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 3) Signature list */}
-            <Card className="rounded-2xl md:order-3">
-              <CardContent className="p-4">
-                <div className="text-sm font-semibold mb-2">
-                  Signature List
-                </div>
-                <div className="space-y-2 text-sm">
-                  {(showSignatures
-                    ? r.signatureList!
-                    : [{ role: "—", name: "No signatures", signed: false }]
-                  ).map((sg, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">{sg.role}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {sg.name}
-                        </div>
-                      </div>
-                      <div className="text-xs text-right">
-                        <span
-                          className={clsx(
-                            "px-2 py-1 rounded-full",
-                            sg.signed
-                              ? "bg-emerald-100 text-emerald-900"
-                              : "bg-amber-100 text-amber-900",
-                          )}
-                        >
-                          {sg.signed ? "Signed" : "Pending"}
-                        </span>
-                        <div className="text-muted-foreground">
-                          {sg.date ?? "—"}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 4) Final summary for closed items (if you want it for PCRs too) */}
-            {showClosedSummary && (
-              <Card className="rounded-2xl md:order-4">
-                <CardContent className="p-4">
-                  <div className="text-sm font-semibold mb-2">
-                    Final Summary
-                  </div>
-                  <div className="text-sm space-y-1">
-                    <div>
-                      Estimated:{" "}
-                      {typeof r.estimated === "number"
-                        ? fmt.format(r.estimated)
-                        : "—"}
-                    </div>
-                    <div>
-                      Actual:{" "}
-                      {typeof r.actual === "number"
-                        ? fmt.format(r.actual)
-                        : "—"}
-                    </div>
-                    <div>
-                      Variance:{" "}
-                      {varianceValue === null
-                        ? "—"
-                        : `${varianceValue > 0 ? "+" : ""}${fmt.format(
-                            varianceValue,
-                          )}`}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 5) Documents list */}
-            {(r.links?.length ?? 0) > 0 && (
-              <Card className="rounded-2xl md:order-5 md:col-span-3">
-                <CardContent className="p-4">
-                  <div className="text-sm font-semibold mb-2">Documents</div>
-                  <div className="space-y-2 text-sm">
-                    {r.links!.map((lnk, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="truncate">{lnk.label}</div>
-                        <a
-                          href={lnk.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-secondary hover:bg-secondary/80"
-                        >
-                          Open <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
 function CompletedRow({ r }: { r: ChangeRecord }) {
   const varianceValue =
     typeof r.estimated === "number" && typeof r.actual === "number"
@@ -1956,6 +1836,9 @@ export default function ChangeOrdersDashboard({
   const [q, setQ] = useState("");
   const [rows] = useState<ChangeRecord[]>(initial ?? DEMO);
 
+  // For Next CC modal
+  const [showCcModal, setShowCcModal] = useState(false);
+
   const view = useMemo(
     () =>
       rows
@@ -1981,10 +1864,7 @@ export default function ChangeOrdersDashboard({
     [pcrRows],
   );
   const pcrToCoRows = useMemo(
-    () =>
-      pcrRows.filter(
-        (r) => r.target === "CO" || r.target === "VOS" || r.target === "AA",
-      ),
+    () => pcrRows.filter((r) => r.target === "CO" || r.target === "VOS" || r.target === "AA"),
     [pcrRows],
   );
 
@@ -2011,12 +1891,13 @@ export default function ChangeOrdersDashboard({
         Change Management Dashboard
       </div>
 
-      {/* Summary + KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Summary + KPIs + Next CC */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <SummaryCard rows={view} />
         <div className="md:col-span-2">
           <ProjectKPIs rows={view} />
         </div>
+        <NextCcCard rows={view} onOpenDetails={() => setShowCcModal(true)} />
       </div>
 
       {/* Search + export */}
@@ -2137,7 +2018,20 @@ export default function ChangeOrdersDashboard({
           )}
         </CardContent>
       </Card>
-      {/* Footer note removed as requested */}
+
+      {/* Footer note */}
+      <div className="text-xs text-muted-foreground">
+        Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI →
+        CO/V/VOS → AA/SA. SLA &amp; progress are derived directly from the
+        stage and dates. PCRs are grouped by their path (PCRs → EI and PCRs → CO
+        / V / VOS / AA-SA), while the last table shows completed issued items
+        (EI / CO / V / VOS / AA / SA).
+      </div>
+
+      {/* Next CC modal (overlay) */}
+      {showCcModal && (
+        <NextCcModal rows={rows} onClose={() => setShowCcModal(false)} />
+      )}
     </div>
   );
 }
