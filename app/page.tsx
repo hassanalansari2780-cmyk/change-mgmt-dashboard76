@@ -64,12 +64,19 @@ export interface ChangeRecord {
   stageStartDate: string; // ISO date string
   overallStartDate: string; // ISO
   outcome?: "Approved" | "Rejected" | "Withdrawn" | "Superseded";
-  target?: PcrTarget;      // ✅ now uses PcrTarget (includes "AA")
-  sponsor?: string;        // Change sponsor
+  target?: PcrTarget; // main path target
+  sponsor?: string; // Change sponsor
   reviewList?: Reviewer[];
   signatureList?: Signer[];
   links?: LinkItem[];
-  prcTarget?: PcrTarget;   // optional second field if you want it
+
+  // ✅ New: CC information (for PCRs that are Ready for CC)
+  ccInfo?: {
+    nextCcNo: number; // upcoming CC meeting number
+    firstCcNo: number; // first CC where it was tabled
+  };
+
+  prcTarget?: PcrTarget; // optional second field if you want it
 }
 
 // ==========================================
@@ -260,77 +267,77 @@ function issuedItemLabel(r: ChangeRecord) {
 // ==========================================
 const DEMO: ChangeRecord[] = [
   // ===== PCRs → EI (Table 1) =====
-{
-  id: "PCR-A-030",
-  type: "PRC",
-  package: "A",
-  title: "Ventilation Fan Adjustment in Tunnel A-02 (PCR)",
-  estimated: 520000,
-  stageKey: "PRC",
-  subStatus: "In Preparation",
-  stageStartDate: "2026-02-11",
-  overallStartDate: "2026-02-11",
-  target: "EI",
-  sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
-},
+  {
+    id: "PCR-A-030",
+    type: "PRC",
+    package: "A",
+    title: "Ventilation Fan Adjustment in Tunnel A-02 (PCR)",
+    estimated: 520000,
+    stageKey: "PRC",
+    subStatus: "In Preparation",
+    stageStartDate: "2026-02-11",
+    overallStartDate: "2026-02-11",
+    target: "EI",
+    sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
+  },
 
-{
-  id: "PCR-C-033",
-  type: "PRC",
-  package: "C",
-  title: "Emergency Lighting Cable Protection (PCR)",
-  estimated: 980000,
-  stageKey: "CC_OUTCOME",
-  subStatus: "Approved",
-  stageStartDate: "2026-02-09",
-  overallStartDate: "2026-01-28",
-  target: "EI",
-  sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
-},
+  {
+    id: "PCR-C-033",
+    type: "PRC",
+    package: "C",
+    title: "Emergency Lighting Cable Protection (PCR)",
+    estimated: 980000,
+    stageKey: "CC_OUTCOME",
+    subStatus: "Approved",
+    stageStartDate: "2026-02-09",
+    overallStartDate: "2026-01-28",
+    target: "EI",
+    sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
+  },
 
-{
-  id: "PCR-D-029",
-  type: "PRC",
-  package: "D",
-  title: "Platform Emergency Call Box Relocation (PCR)",
-  estimated: 240000,
-  actual: 235000,
-  stageKey: "CEO_OR_BOARD_MEMO",
-  subStatus: "In Approval",
-  stageStartDate: "2026-02-12",
-  overallStartDate: "2026-01-30",
-  target: "EI",
-  sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
-},
+  {
+    id: "PCR-D-029",
+    type: "PRC",
+    package: "D",
+    title: "Platform Emergency Call Box Relocation (PCR)",
+    estimated: 240000,
+    actual: 235000,
+    stageKey: "CEO_OR_BOARD_MEMO",
+    subStatus: "In Approval",
+    stageStartDate: "2026-02-12",
+    overallStartDate: "2026-01-30",
+    target: "EI",
+    sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
+  },
 
-{
-  id: "PCR-E-015",
-  type: "PRC",
-  package: "E",
-  title: "Workshop Vertical Clearance Improvement (PCR)",
-  estimated: 300000,
-  stageKey: "EI",
-  subStatus: "Ready",
-  stageStartDate: "2026-02-10",
-  overallStartDate: "2026-01-29",
-  target: "EI",
-  sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
-},
+  {
+    id: "PCR-E-015",
+    type: "PRC",
+    package: "E",
+    title: "Workshop Vertical Clearance Improvement (PCR)",
+    estimated: 300000,
+    stageKey: "EI",
+    subStatus: "Ready",
+    stageStartDate: "2026-02-10",
+    overallStartDate: "2026-01-29",
+    target: "EI",
+    sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
+  },
 
-{
-  id: "PCR-F-009",
-  type: "PRC",
-  package: "F",
-  title: "Signalling Panel Earthing Correction (PCR)",
-  estimated: 150000,
-  actual: 155000,
-  stageKey: "EI",
-  subStatus: "To be Issued to Contractor",
-  stageStartDate: "2026-02-14",
-  overallStartDate: "2026-02-01",
-  target: "EI",
-  sponsor: "Signalling Manager – Eng. Talal Al-Balushi",
-},
+  {
+    id: "PCR-F-009",
+    type: "PRC",
+    package: "F",
+    title: "Signalling Panel Earthing Correction (PCR)",
+    estimated: 150000,
+    actual: 155000,
+    stageKey: "EI",
+    subStatus: "To be Issued to Contractor",
+    stageStartDate: "2026-02-14",
+    overallStartDate: "2026-02-01",
+    target: "EI",
+    sponsor: "Signalling Manager – Eng. Talal Al-Balushi",
+  },
   {
     id: "PCR-A-013",
     type: "PRC",
@@ -389,6 +396,11 @@ const DEMO: ChangeRecord[] = [
         date: "2026-01-17",
       },
     ],
+    // ✅ Ready for upcoming CC-12, first time
+    ccInfo: {
+      nextCcNo: 12,
+      firstCcNo: 12,
+    },
   },
 
   // PCR → EI currently at CC Outcome
@@ -453,78 +465,83 @@ const DEMO: ChangeRecord[] = [
 
   // ===== PCRs → CO / V / VOS / AA-SA (Table 2) =====
 
-{
-  id: "PCR-B-020",
-  type: "PRC",
-  package: "B",
-  title: "Drainage Channel Reinforcement (PCR)",
-  estimated: 780000,
-  stageKey: "CO_V_VOS",
-  subStatus: "To be Prepared",
-  stageStartDate: "2026-02-13",
-  overallStartDate: "2026-02-13",
-  target: "CO",
-  sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
-},
+  {
+    id: "PCR-B-020",
+    type: "PRC",
+    package: "B",
+    title: "Drainage Channel Reinforcement (PCR)",
+    estimated: 780000,
+    stageKey: "PRC",
+    subStatus: "Ready for CC",
+    stageStartDate: "2026-02-13",
+    overallStartDate: "2026-02-13",
+    target: "CO",
+    sponsor: "Pkg B PM – Eng. Rashid Al-Siyabi",
+    // ✅ Also going to CC-12, but carried over from CC-11
+    ccInfo: {
+      nextCcNo: 12,
+      firstCcNo: 11,
+    },
+  },
 
-{
-  id: "PCR-G-017",
-  type: "PRC",
-  package: "G",
-  title: "Trackside Fencing Optimization (PCR)",
-  estimated: 1100000,
-  actual: 1050000,
-  stageKey: "CO_V_VOS",
-  subStatus: "Under Review",
-  stageStartDate: "2026-02-10",
-  overallStartDate: "2026-02-01",
-  target: "VOS",
-  sponsor: "Track Engineering Manager",
-},
+  {
+    id: "PCR-G-017",
+    type: "PRC",
+    package: "G",
+    title: "Trackside Fencing Optimization (PCR)",
+    estimated: 1100000,
+    actual: 1050000,
+    stageKey: "CO_V_VOS",
+    subStatus: "Under Review",
+    stageStartDate: "2026-02-10",
+    overallStartDate: "2026-02-01",
+    target: "VOS",
+    sponsor: "Track Engineering Manager",
+  },
 
-{
-  id: "PCR-D-031",
-  type: "PRC",
-  package: "D",
-  title: "Passenger Flow Adjustment at Station D-07 (PCR)",
-  estimated: 450000,
-  stageKey: "CO_V_VOS",
-  subStatus: "In Circulation",
-  stageStartDate: "2026-02-09",
-  overallStartDate: "2026-01-30",
-  target: "CO",
-  sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
-},
+  {
+    id: "PCR-D-031",
+    type: "PRC",
+    package: "D",
+    title: "Passenger Flow Adjustment at Station D-07 (PCR)",
+    estimated: 450000,
+    stageKey: "CO_V_VOS",
+    subStatus: "In Circulation",
+    stageStartDate: "2026-02-09",
+    overallStartDate: "2026-01-30",
+    target: "CO",
+    sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
+  },
 
-{
-  id: "PCR-E-024",
-  type: "PRC",
-  package: "E",
-  title: "Maintenance Yard Gate Relocation (PCR)",
-  estimated: 600000,
-  actual: 590000,
-  stageKey: "AA_SA",
-  subStatus: "In Approval",
-  stageStartDate: "2026-02-11",
-  overallStartDate: "2026-02-02",
-  target: "AA",
-  sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
-},
+  {
+    id: "PCR-E-024",
+    type: "PRC",
+    package: "E",
+    title: "Maintenance Yard Gate Relocation (PCR)",
+    estimated: 600000,
+    actual: 590000,
+    stageKey: "AA_SA",
+    subStatus: "In Approval",
+    stageStartDate: "2026-02-11",
+    overallStartDate: "2026-02-02",
+    target: "AA",
+    sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
+  },
 
-{
-  id: "PCR-F-012",
-  type: "PRC",
-  package: "F",
-  title: "Signalling Room Cooling Improvement (PCR)",
-  estimated: 900000,
-  actual: 920000,
-  stageKey: "CO_V_VOS",
-  subStatus: "To be Issued to Contractor",
-  stageStartDate: "2026-02-14",
-  overallStartDate: "2026-02-05",
-  target: "CO",
-  sponsor: "Signalling Manager – Eng. Talal Al-Balushi",
-},
+  {
+    id: "PCR-F-012",
+    type: "PRC",
+    package: "F",
+    title: "Signalling Room Cooling Improvement (PCR)",
+    estimated: 900000,
+    actual: 920000,
+    stageKey: "CO_V_VOS",
+    subStatus: "To be Issued to Contractor",
+    stageStartDate: "2026-02-14",
+    overallStartDate: "2026-02-05",
+    target: "CO",
+    sponsor: "Signalling Manager – Eng. Talal Al-Balushi",
+  },
   {
     id: "PCR-A-018",
     type: "PRC",
@@ -652,74 +669,74 @@ const DEMO: ChangeRecord[] = [
   },
 
   // ===== EI in progress / issued (used in details / summary) =====
-{
-  id: "EI-A-011",
-  type: "EI",
-  package: "A",
-  title: "Tunnel Lighting Rectification (EI)",
-  estimated: 0,
-  stageKey: "EI",
-  subStatus: "Issued",
-  stageStartDate: "2025-11-20",
-  overallStartDate: "2025-11-10",
-  sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
-},
+  {
+    id: "EI-A-011",
+    type: "EI",
+    package: "A",
+    title: "Tunnel Lighting Rectification (EI)",
+    estimated: 0,
+    stageKey: "EI",
+    subStatus: "Issued",
+    stageStartDate: "2025-11-20",
+    overallStartDate: "2025-11-10",
+    sponsor: "Pkg A PM – Eng. Nasser Al-Rawahi",
+  },
 
-{
-  id: "CO-C-045",
-  type: "CO",
-  package: "C",
-  title: "Station C-09 Canopy Strengthening (Final)",
-  estimated: 1300000,
-  actual: 1275000,
-  stageKey: "CO_V_VOS",
-  subStatus: "Done",
-  stageStartDate: "2025-12-18",
-  overallStartDate: "2025-12-01",
-  sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
-},
+  {
+    id: "CO-C-045",
+    type: "CO",
+    package: "C",
+    title: "Station C-09 Canopy Strengthening (Final)",
+    estimated: 1300000,
+    actual: 1275000,
+    stageKey: "CO_V_VOS",
+    subStatus: "Done",
+    stageStartDate: "2025-12-18",
+    overallStartDate: "2025-12-01",
+    sponsor: "Pkg C PM – Eng. Khalid Al-Harthy",
+  },
 
-{
-  id: "V-D-005",
-  type: "CO",
-  package: "D",
-  title: "Value Optimization – Ticket Counter Layout (Final)",
-  estimated: 150000,
-  actual: 150000,
-  stageKey: "CO_V_VOS",
-  subStatus: "Done",
-  stageStartDate: "2025-10-09",
-  overallStartDate: "2025-09-22",
-  sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
-},
+  {
+    id: "V-D-005",
+    type: "CO",
+    package: "D",
+    title: "Value Optimization – Ticket Counter Layout (Final)",
+    estimated: 150000,
+    actual: 150000,
+    stageKey: "CO_V_VOS",
+    subStatus: "Done",
+    stageStartDate: "2025-10-09",
+    overallStartDate: "2025-09-22",
+    sponsor: "Pkg D PM – Eng. Younis Al-Maamari",
+  },
 
-{
-  id: "AA-E-010",
-  type: "CO",
-  package: "E",
-  title: "Agreement Amendment – Workshop Roof Access (Final)",
-  estimated: 430000,
-  actual: 420000,
-  stageKey: "AA_SA",
-  subStatus: "Done",
-  stageStartDate: "2025-09-29",
-  overallStartDate: "2025-09-10",
-  sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
-},
+  {
+    id: "AA-E-010",
+    type: "CO",
+    package: "E",
+    title: "Agreement Amendment – Workshop Roof Access (Final)",
+    estimated: 430000,
+    actual: 420000,
+    stageKey: "AA_SA",
+    subStatus: "Done",
+    stageStartDate: "2025-09-29",
+    overallStartDate: "2025-09-10",
+    sponsor: "Assets Manager – Eng. Hamad Al-Hinai",
+  },
 
-{
-  id: "SA-G-006",
-  type: "CO",
-  package: "G",
-  title: "Site Adjustment – Trackside Clearance Update (Final)",
-  estimated: 600000,
-  actual: 585000,
-  stageKey: "AA_SA",
-  subStatus: "Done",
-  stageStartDate: "2025-11-01",
-  overallStartDate: "2025-10-15",
-  sponsor: "Track Engineering Manager",
-},
+  {
+    id: "SA-G-006",
+    type: "CO",
+    package: "G",
+    title: "Site Adjustment – Trackside Clearance Update (Final)",
+    estimated: 600000,
+    actual: 585000,
+    stageKey: "AA_SA",
+    subStatus: "Done",
+    stageStartDate: "2025-11-01",
+    overallStartDate: "2025-10-15",
+    sponsor: "Track Engineering Manager",
+  },
   {
     id: "EI-A-004",
     type: "EI",
@@ -958,7 +975,9 @@ function computeSummary(rows: ChangeRecord[]) {
 
   const pcrs = rows.filter((r) => r.type === "PRC");
   const pcrToEI = pcrs.filter((r) => r.target === "EI").length;
-  const pcrToCO = pcrs.filter((r) => r.target === "CO" || r.target === "VOS").length;
+  const pcrToCO = pcrs.filter(
+    (r) => r.target === "CO" || r.target === "VOS" || r.target === "AA",
+  ).length;
 
   // Completed = EI (Issued / To be Issued) OR CO/V/VOS (Done) OR AA/SA (Done)
   const completed = rows.filter((r) => {
@@ -1048,6 +1067,33 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
     };
   }, [rows]);
 
+  // ✅ New: compute upcoming CC meeting summary
+  const cc = useMemo(() => {
+    const candidates = rows.filter(
+      (r) =>
+        r.type === "PRC" &&
+        r.stageKey === "PRC" &&
+        r.subStatus === "Ready for CC" &&
+        r.ccInfo?.nextCcNo,
+    );
+
+    if (!candidates.length) return null;
+
+    const nextNo = Math.min(...candidates.map((r) => r.ccInfo!.nextCcNo));
+    const nextRows = candidates.filter((r) => r.ccInfo!.nextCcNo === nextNo);
+
+    const eiCount = nextRows.filter(
+      (r) => r.target === "EI" || r.target === "EI+CO",
+    ).length;
+
+    const coCount = nextRows.filter(
+      (r) =>
+        r.target === "CO" || r.target === "VOS" || r.target === "AA",
+    ).length;
+
+    return { nextNo, eiCount, coCount, rows: nextRows };
+  }, [rows]);
+
   // --- Details only for Total Project Value ---
   const handleTotalProjectDetails = () => {
     alert(
@@ -1060,6 +1106,43 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
         "• Any excluded provisional sums.",
       ].join("\n"),
     );
+  };
+
+  // ✅ New: details for Next CC Meeting card
+  const handleCcDetails = () => {
+    if (!cc) {
+      alert("No PCRs are currently marked as 'Ready for CC'.");
+      return;
+    }
+
+    const lines: string[] = [
+      `Next CC Meeting: CC-${cc.nextNo}`,
+      `PCRs for EI path: ${cc.eiCount}`,
+      `PCRs for CO / V / VOS / AA path: ${cc.coCount}`,
+      "",
+      "Items:",
+      ...cc.rows.map((r) => {
+        const path =
+          r.target === "EI" || r.target === "EI+CO"
+            ? "EI path"
+            : "CO / V / VOS / AA-SA path";
+
+        const info = r.ccInfo;
+        let status = "";
+        if (info) {
+          status =
+            info.firstCcNo < info.nextCcNo
+              ? `Carried over from CC-${info.firstCcNo}`
+              : `First time in CC-${info.nextCcNo}`;
+        }
+
+        return `${r.id} – ${path} – Sponsor: ${
+          r.sponsor ?? "N/A"
+        } – ${status}`;
+      }),
+    ];
+
+    alert(lines.join("\n"));
   };
 
   // --- Single KPI card ---
@@ -1124,7 +1207,7 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-stretch">
       {/* 1) Total Project Value — with Details */}
       <Item
         label="Total Project Value"
@@ -1136,7 +1219,9 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
       <Item
         label="Total Approved Change Value"
         value={fmt.format(k.totalApprovedValue)}
-        subtitle={`of ${fmt.format(k.limitValue)} limit (${LIMIT_PERCENT}% of project)`}
+        subtitle={`of ${fmt.format(
+          k.limitValue,
+        )} limit (${LIMIT_PERCENT}% of project)`}
         showBar
         barValue={k.approvedVsLimitPct}
         barCaption={`${k.approvedVsLimitPct.toFixed(
@@ -1154,6 +1239,22 @@ function ProjectKPIs({ rows }: { rows: ChangeRecord[] }) {
         barCaption={`${k.percentVsLimitPct.toFixed(
           0,
         )}% of percentage limit used`}
+      />
+
+      {/* 4) Next CC Meeting card */}
+      <Item
+        label={cc ? `Next CC – CC-${cc.nextNo}` : "Next CC Meeting"}
+        value={
+          cc
+            ? `${cc.eiCount} EI / ${cc.coCount} CO`
+            : "No PCRs Ready for CC"
+        }
+        subtitle={
+          cc
+            ? "PCRs marked 'Ready for CC'"
+            : "Update PCRs to 'Ready for CC' to show them here"
+        }
+        onDetails={cc ? handleCcDetails : undefined}
       />
     </div>
   );
@@ -1272,12 +1373,7 @@ function ChangeTableHeader({
       <div className="col-span-2">Stage</div>
 
       {/* Optional middle column (for Issued Item in table 3) */}
-      <div
-        className={clsx(
-          "col-span-1",
-          !showMiddleColumn && "hidden",
-        )}
-      >
+      <div className={clsx("col-span-1", !showMiddleColumn && "hidden")}>
         {showMiddleColumn ? middleLabel : null}
       </div>
 
@@ -1514,12 +1610,7 @@ function Row({
         </div>
 
         {/* Middle column: hidden for tables 1 & 2, "Issued Item" for table 3 */}
-        <div
-          className={clsx(
-            "col-span-1",
-            !showMiddleColumn && "hidden",
-          )}
-        >
+        <div className={clsx("col-span-1", !showMiddleColumn && "hidden")}>
           {showMiddleColumn && mode === "completed" && (
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium">
               {issuedItemLabel(r)}
@@ -1890,7 +1981,10 @@ export default function ChangeOrdersDashboard({
     [pcrRows],
   );
   const pcrToCoRows = useMemo(
-    () => pcrRows.filter((r) => r.target === "CO"),
+    () =>
+      pcrRows.filter(
+        (r) => r.target === "CO" || r.target === "VOS" || r.target === "AA",
+      ),
     [pcrRows],
   );
 
@@ -2043,15 +2137,7 @@ export default function ChangeOrdersDashboard({
           )}
         </CardContent>
       </Card>
-
-      {/* Footer note */}
-      <div className="text-xs text-muted-foreground">
-        Lifecycle covered: PRC → CC Outcome → CEO / Board Memo → EI →
-        CO/V/VOS → AA/SA. SLA &amp; progress are derived directly from the
-        stage and dates. PCRs are grouped by their path (PCRs → EI and PCRs → CO
-        / V / VOS / AA-SA), while the last table shows completed issued items
-        (EI / CO / V / VOS / AA / SA).
-      </div>
+      {/* Footer note removed as requested */}
     </div>
   );
 }
